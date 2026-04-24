@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IP Monitor - Ultra Fix</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; padding: 20px; }
+        .container { max-width: 900px; margin: auto; }
+        .card { background: #1e293b; padding: 25px; border-radius: 12px; border: 1px solid #334155; margin-bottom: 20px; }
+        .ip-text { font-size: 32px; color: #fbbf24; font-weight: bold; font-family: monospace; display: block; margin: 10px 0; }
+        .status-box { padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; margin-bottom: 15px; }
+        .bg-red { background: #7f1d1d; color: #fecaca; border: 1px solid #dc2626; }
+        .bg-green { background: #064e3b; color: #a7f3d0; border: 1px solid #059669; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85em; }
+        th, td { padding: 12px; border-bottom: 1px solid #334155; text-align: left; }
+        th { background: #0f172a; }
+        .badge { background: #334155; padding: 2px 6px; border-radius: 4px; color: #38bdf8; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="card">
+        <h2>Detail Koneksi</h2>
+        <div id="status-container">Menghubungkan...</div>
+        <span id="ip-display" class="ip-text">Mencari...</span>
+        <div id="loc-display" style="font-size: 1.2em; color: #38bdf8;"></div>
+        <div id="isp-display" style="opacity: 0.8; margin-top: 5px;"></div>
+        <div id="proxy-display" style="margin-top: 10px;"></div>
+    </div>
+
+    <div class="card" style="overflow-x: auto;">
+        <button onclick="localStorage.removeItem('ip_history_v6'); location.reload();" style="float: right; cursor: pointer;">Reset Histori</button>
+        <h3>Histori Penggunaan</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Waktu</th>
+                    <th>IPv4</th>
+                    <th>ISP</th>
+                    <th>Lokasi</th>
+                    <th>Proxy?</th>
+                </tr>
+            </thead>
+            <tbody id="log-table"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    async function fetchIPData() {
+        // Daftar API cadangan
+        const apiList = [
+            'https://ipapi.co/json/',
+            'https://ipwho.is/',
+            'https://extreme-ip-lookup.com/json/'
+        ];
+
+        let data = null;
+
+        // Coba satu per satu sampai berhasil
+        for (let api of apiList) {
+            try {
+                const res = await fetch(api);
+                const json = await res.json();
+                // Normalisasi data karena setiap API punya nama variabel berbeda
+                data = {
+                    ip: json.ip || json.query,
+                    isp: json.org || json.connection?.isp || json.isp || "Unknown ISP",
+                    country: json.country_name || json.country || "-",
+                    city: json.city || "-",
+                    isProxy: json.security?.proxy || json.proxy || false,
+                    isVPN: json.security?.vpn || false
+                };
+                if (data.ip) break; 
+            } catch (e) {
+                console.log(`Gagal memuat dari ${api}, mencoba cadangan...`);
+            }
+        }
+
+        if (!data) {
+            document.getElementById('status-container').innerText = "Semua API gagal. Periksa Adblock/Internet.";
+            return;
+        }
+
+        processResult(data);
+    }
+
+    function processResult(data) {
+        let history = JSON.parse(localStorage.getItem('ip_history_v6')) || [];
+        const isUsed = history.some(item => item.ip === data.ip);
+
+        // Update UI
+        document.getElementById('ip-display').innerText = data.ip;
+        document.getElementById('loc-display').innerText = `📍 ${data.city}, ${data.country}`;
+        document.getElementById('isp-display').innerText = `🏢 ISP: ${data.isp}`;
+        document.getElementById('proxy-display').innerHTML = data.isProxy 
+            ? `<span style="color:#f87171; font-weight:bold;">⚠️ PROXY/VPN TERDETEKSI</span>` 
+            : `<span style="color:#4ade80;">✅ KONEKSI RESIDENTIAL (CLEAN)</span>`;
+
+        if (isUsed) {
+            document.getElementById('status-container').innerHTML = '<div class="status-box bg-red">IP SUDAH PERNAH TERPAKAI!</div>';
+        } else {
+            document.getElementById('status-container').innerHTML = '<div class="status-box bg-green">IP FRESH / BELUM TERCATAT</div>';
+            
+            // Simpan ke histori
+            history.unshift({
+                time: new Date().toLocaleString('id-ID'),
+                ip: data.ip,
+                isp: data.isp,
+                loc: `${data.city}, ${data.country}`,
+                proxy: data.isProxy ? "YES" : "NO"
+            });
+            localStorage.setItem('ip_history_v6', JSON.stringify(history));
+        }
+
+        renderTable(history);
+    }
+
+    function renderTable(history) {
+        document.getElementById('log-table').innerHTML = history.map(item => `
+            <tr>
+                <td>${item.time}</td>
+                <td style="font-family: monospace; font-weight: bold; color: #fbbf24;">${item.ip}</td>
+                <td>${item.isp}</td>
+                <td><span class="badge">${item.loc}</span></td>
+                <td>${item.proxy}</td>
+            </tr>
+        `).join('');
+    }
+
+    fetchIPData();
+</script>
+</body>
+</html>
