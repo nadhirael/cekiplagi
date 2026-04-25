@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IP Monitor & Auto-Archive</title>
+    <title>IP Monitor Pro - Sinkron Database</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; padding: 20px; }
-        .container { max-width: 900px; margin: auto; }
+        .container { max-width: 950px; margin: auto; }
         .card { background: #1e293b; padding: 25px; border-radius: 12px; border: 1px solid #334155; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
         .ip-text { font-size: 32px; color: #fbbf24; font-weight: bold; font-family: monospace; display: block; margin: 5px 0; }
         .status-box { padding: 12px; border-radius: 8px; font-weight: bold; text-align: center; margin-bottom: 15px; }
@@ -24,109 +24,110 @@
 <div class="container">
     <div class="card">
         <h2>Koneksi Saat Ini</h2>
-        <div id="status-container">Menghubungkan ke server...</div>
+        <div id="status-container">Menghubungkan ke database...</div>
         <span id="ip-display" class="ip-text">Mencari IP...</span>
         <div id="loc-display" style="font-size: 1.1em; color: #38bdf8;"></div>
         <div id="isp-display" style="opacity: 0.8; margin-top: 5px;"></div>
     </div>
 
     <div class="card" style="overflow-x: auto;">
-        <button onclick="localStorage.removeItem('ip_final_v1'); location.reload();">Reset Tampilan</button>
-        <h3>Histori (Tersimpan di Google Sheets)</h3>
+        <button onclick="location.reload();">Refresh Data</button>
+        <h3>Histori (Sinkron dari Google Sheets)</h3>
         <table>
             <thead>
                 <tr>
-                    <th>Waktu</th>
+                    <th>Waktu Akses</th>
                     <th>IPv4 Address</th>
                     <th>ISP</th>
                     <th>Lokasi</th>
                     <th>Proxy?</th>
                 </tr>
             </thead>
-            <tbody id="log-table"></tbody>
+            <tbody id="log-table">
+                <tr><td colspan="5" style="text-align:center;">Memuat histori dari Google Sheets...</td></tr>
+            </tbody>
         </table>
     </div>
 </div>
 
 <script>
-    // URL Web App Google Script Kamu
-    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbze2bEXcnXEscl-XtK6Im2tWD7nfPSG2FQjJJ-Z7RvaWauOUxeJh2tH8csX8igoyQj5/exec';
+    // URL Web App Google Script kamu
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby9ZLQZ33RUf3FU_wnAb1S0kgulHf18RQVNW2H2rjE31luMIzZE53JUZWGdxbgbNxGk/exec';
 
-    async function fetchIPData() {
-        const apiList = ['https://ipapi.co/json/', 'https://ipwho.is/'];
-        let data = null;
-
-        for (let api of apiList) {
-            try {
-                const res = await fetch(api);
-                const json = await res.json();
-                data = {
-                    ip: json.ip || json.query,
-                    isp: json.org || json.connection?.isp || json.isp || "Unknown",
-                    country: json.country_name || json.country || "-",
-                    city: json.city || "-",
-                    isProxy: json.security?.proxy || json.proxy || false
-                };
-                if (data.ip) break;
-            } catch (e) {}
-        }
-
-        if (data) processResult(data);
-        else document.getElementById('status-container').innerText = "Gagal mengambil data.";
-    }
-
-    function processResult(data) {
-        const time = new Date().toLocaleString('id-ID');
-        const loc = `${data.city}, ${data.country}`;
-        const proxyStatus = data.isProxy ? "YES" : "NO";
-
-        // Cek histori lokal (untuk tampilan cepat)
-        let history = JSON.parse(localStorage.getItem('ip_final_v1')) || [];
-        const isUsed = history.some(item => item.ip === data.ip);
-
-        // Update UI
-        document.getElementById('ip-display').innerText = data.ip;
-        document.getElementById('loc-display').innerText = `📍 ${loc}`;
-        document.getElementById('isp-display').innerText = `🏢 ISP: ${data.isp}`;
-
-        if (isUsed) {
-            document.getElementById('status-container').innerHTML = '<div class="status-box bg-red">⚠️ IP INI SUDAH PERNAH TERPAKAI!</div>';
-        } else {
-            document.getElementById('status-container').innerHTML = '<div class="status-box bg-green">✅ IP FRESH / TERCATAT KE DATABASE</div>';
+    async function init() {
+        try {
+            // 1. Ambil data IP saat ini dari API
+            const res = await fetch('https://ipwho.is/');
+            const data = await res.json();
             
-            // KIRIM KE GOOGLE SHEETS
-            sendToGoogleSheets(time, data.ip, data.isp, loc, proxyStatus);
+            if (data.success) {
+                const currentIP = data.ip;
+                const currentISP = data.connection.isp;
+                const currentLoc = `${data.city}, ${data.country}`;
+                const isProxy = data.security?.proxy ? "YES" : "NO";
+                const time = new Date().toLocaleString('id-ID');
 
-            // Simpan lokal
-            history.unshift({ time, ip: data.ip, isp: data.isp, loc, proxy: proxyStatus });
-            localStorage.setItem('ip_final_v1', JSON.stringify(history));
+                // Update Tampilan Utama
+                document.getElementById('ip-display').innerText = currentIP;
+                document.getElementById('loc-display').innerText = `📍 ${currentLoc}`;
+                document.getElementById('isp-display').innerText = `🏢 ISP: ${currentISP}`;
+
+                // 2. Kirim IP saat ini ke Google Sheets
+                await sendToSheets(time, currentIP, currentISP, currentLoc, isProxy);
+
+                // 3. Tarik semua histori dari Google Sheets untuk ditampilkan
+                await loadHistoryFromSheets(currentIP);
+            }
+        } catch (error) {
+            document.getElementById('status-container').innerText = "Gagal memuat koneksi.";
         }
-
-        renderTable(history);
     }
 
-    function sendToGoogleSheets(time, ip, isp, loc, proxy) {
-        fetch(GOOGLE_SCRIPT_URL, {
+    async function sendToSheets(time, ip, isp, loc, proxy) {
+        // Mengirim data ke doPost di Apps Script
+        await fetch(GOOGLE_SCRIPT_URL, {
             method: 'POST',
             mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ time, ip, isp, loc, proxy })
         });
     }
 
-    function renderTable(history) {
-        document.getElementById('log-table').innerHTML = history.map(item => `
-            <tr>
-                <td>${item.time}</td>
-                <td style="font-family: monospace; font-weight: bold; color: #fbbf24;">${item.ip}</td>
-                <td>${item.isp}</td>
-                <td><span class="badge">${item.loc}</span></td>
-                <td>${item.proxy}</td>
-            </tr>
-        `).join('');
+    async function loadHistoryFromSheets(currentIP) {
+        try {
+            // Menarik data dari doGet di Apps Script
+            const response = await fetch(GOOGLE_SCRIPT_URL);
+            const history = await response.json();
+            
+            // Cek apakah IP sekarang sudah pernah ada di histori sebelumnya
+            // (Kita cek apakah ada IP yang sama tapi dengan waktu yang berbeda)
+            const isUsed = history.some(item => item.ip === currentIP);
+
+            if (isUsed) {
+                document.getElementById('status-container').innerHTML = '<div class="status-box bg-red">⚠️ IP INI SUDAH TERCATAT DI DATABASE!</div>';
+            } else {
+                document.getElementById('status-container').innerHTML = '<div class="status-box bg-green">✅ IP BARU (FRESH)</div>';
+            }
+
+            // Render data ke tabel
+            const tableBody = document.getElementById('log-table');
+            tableBody.innerHTML = history.map(item => `
+                <tr>
+                    <td>${item.time}</td>
+                    <td style="font-family: monospace; font-weight: bold; color: #fbbf24;">${item.ip}</td>
+                    <td>${item.isp}</td>
+                    <td><span class="badge">${item.loc}</span></td>
+                    <td>${item.proxy}</td>
+                </tr>
+            `).join('');
+
+        } catch (e) {
+            document.getElementById('log-table').innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Gagal sinkron database. Pastikan Web App sudah di-Deploy sebagai "Anyone".</td></tr>';
+        }
     }
 
-    fetchIPData();
+    // Jalankan aplikasi
+    init();
 </script>
+
 </body>
 </html>
