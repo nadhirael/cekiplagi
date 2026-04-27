@@ -3,17 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IP Monitor Pro - Flag Edition</title>
+    <title>IP Monitor - Minimalist</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; padding: 20px; margin: 0; }
-        .container { max-width: 1100px; margin: auto; padding-bottom: 50px; }
+        .container { max-width: 1000px; margin: auto; padding-bottom: 50px; }
         
-        .nav-menu { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #334155; padding-bottom: 10px; overflow-x: auto; }
-        .nav-link { padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; background: #1e293b; color: #94a3b8; white-space: nowrap; text-decoration: none; font-size: 14px; }
+        /* NAVIGASI: AREA EDIT MANDIRI */
+        .nav-menu { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #334155; padding-bottom: 10px; overflow-x: auto; align-items: center; }
+        .nav-link { padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; background: #1e293b; color: #94a3b8; text-decoration: none; white-space: nowrap; font-size: 13px; }
         .nav-link.active { background: #38bdf8; color: #0f172a; }
         .nav-link:hover:not(.active) { background: #334155; color: white; }
 
-        .card { background: #1e293b; padding: 25px; border-radius: 12px; border: 1px solid #334155; margin-bottom: 20px; box-shadow: 0 10px 15px rgba(0,0,0,0.2); }
+        .card { background: #1e293b; padding: 25px; border-radius: 12px; border: 1px solid #334155; margin-bottom: 20px; }
         .ip-text { font-size: 32px; color: #fbbf24; font-weight: bold; font-family: monospace; }
         .status-box { padding: 12px; border-radius: 8px; font-weight: bold; text-align: center; margin-bottom: 15px; }
         .bg-red { background: #7f1d1d; color: #fecaca; border: 1px solid #dc2626; }
@@ -29,7 +30,6 @@
         
         .copy-btn { background: #38bdf8; color: #0f172a; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
         .btn-action { background: #38bdf8; color: #0f172a; border: none; padding: 15px 25px; border-radius: 30px; cursor: pointer; font-weight: bold; }
-        .flag { font-size: 1.2em; vertical-align: middle; margin-right: 5px; }
 
         .page-content { display: none; }
         .page-content.active { display: block; animation: fadeIn 0.4s; }
@@ -40,37 +40,37 @@
 
 <div class="container">
     <div class="nav-menu">
-        <div class="nav-link active" onclick="openPage('ip-monitor', this)">IP Monitor</div>
+        <div class="nav-link active" onclick="openPage('ip-monitor', this)">Monitor</div>
         <div class="nav-link" onclick="openPage('speed-test', this)">Speedtest</div>
-        <div class="nav-link" onclick="openPage('zip-search', this)">Cari Kode Pos</div>
-        <a href="https://stake.com" target="_blank" class="nav-link" style="background: #4f46e5; color: white;" title="Klik kanan > Buka di Jendela Penyamaran">Stake ↗</a>
+        <div class="nav-link" onclick="openPage('zip-search', this)">Kode Pos</div>
+        
+        <span style="color: #334155; margin: 0 5px;">|</span>
+        
+        <a href="https://stake.com" target="_blank" class="nav-link" style="background:#4f46e5; color:white;">Stake ↗</a>
     </div>
 
     <div id="ip-monitor" class="page-content active">
         <div class="card">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                <div>
-                    <h2>Koneksi Saat Ini</h2>
-                    <div id="status-container">Sinkronisasi...</div>
-                </div>
-                <button onclick="location.reload()" class="copy-btn" style="background:#334155; color:white; padding: 10px 20px;">🔄 REFRESH</button>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2>Koneksi Saat Ini</h2>
+                <button onclick="location.reload()" class="copy-btn" style="background:#334155; color:white;">🔄 REFRESH</button>
             </div>
+            <div id="status-container">Sinkronisasi...</div>
             <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 10px;">
                 <span id="ip-display" class="ip-text">Mencari IP...</span>
                 <button class="copy-btn" onclick="copyText(document.getElementById('ip-display').innerText)">COPY IP</button>
             </div>
-            <div id="loc-display" style="color: #38bdf8; margin-top: 10px; font-weight: bold; font-size: 1.1em;">📍 Mencari Lokasi...</div>
-            <div id="isp-display" style="opacity: 0.8; margin-top: 4px;">🏢 Mencari ISP...</div>
+            <div id="loc-display" style="color: #38bdf8; margin-top: 10px; font-weight: bold;">📍 Mencari...</div>
+            <div id="isp-display" style="opacity: 0.8; margin-top: 4px;">🏢 Mencari...</div>
         </div>
 
         <div class="card">
-            <h3 style="margin-top:0;">Histori Database</h3>
+            <h3 style="margin:0; margin-bottom:15px;">Histori Database</h3>
             <div class="controls-container">
                 <input type="text" id="search-input" placeholder="Filter IP..." oninput="renderTabel()" style="flex-grow: 1;">
                 <select id="rows-per-page" onchange="renderTabel()">
                     <option value="10">10 Baris</option>
                     <option value="20">20 Baris</option>
-                    <option value="50">50 Baris</option>
                 </select>
             </div>
             <div style="overflow-x: auto;">
@@ -80,8 +80,7 @@
                             <th>Waktu</th>
                             <th>IP Address</th>
                             <th>ISP</th>
-                            <th>Kota</th>
-                            <th>Negara</th>
+                            <th>Lokasi (Kota, Negara)</th>
                         </tr>
                     </thead>
                     <tbody id="log-table"></tbody>
@@ -92,17 +91,15 @@
 
     <div id="speed-test" class="page-content">
         <div class="card" style="text-align: center;">
-            <h3>Test Kecepatan</h3>
             <iframe src="https://fast.com" width="100%" height="450px" frameborder="0" style="background:white; border-radius:12px;"></iframe>
         </div>
     </div>
 
     <div id="zip-search" class="page-content">
         <div class="card" style="text-align: center; padding: 50px 20px;">
-            <img src="https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_92x30dp.png" alt="Google" style="width: 100px; margin-bottom: 20px;">
             <div style="max-width: 500px; margin: auto;">
                 <input type="text" id="single-query" placeholder="Ketik Kecamatan & Kabupaten..." style="width: 100%; border-radius: 30px; padding: 15px; margin-bottom: 15px; text-align: center; border: 1px solid #334155;">
-                <button class="btn-action" onclick="searchZip()">CARI KODE POS</button>
+                <button class="btn-action" onclick="searchZip()">CARI DI GOOGLE</button>
             </div>
         </div>
     </div>
@@ -120,24 +117,10 @@
         element.classList.add('active');
     }
 
-    // Fungsi konversi kode negara ke Emoji Bendera
-    function getFlagEmoji(countryCode) {
-        if(!countryCode) return "🏳️";
-        const codePoints = countryCode.toUpperCase().split('').map(char => 127397 + char.charCodeAt());
-        return String.fromCodePoint(...codePoints);
-    }
-
     function searchZip() {
         const val = document.getElementById('single-query').value.trim();
         if (!val) return;
-        let q = val.toLowerCase().includes("kode pos") ? val : "kode pos " + val;
-        window.open(`https://www.google.com/search?q=${encodeURIComponent(q)}`, '_blank');
-    }
-
-    function playAlert(dup) {
-        const msg = new SpeechSynthesisUtterance(dup ? 'Duplicate' : 'Fresh');
-        msg.lang = 'en-US';
-        window.speechSynthesis.speak(msg);
+        window.open(`https://www.google.com/search?q=${encodeURIComponent("kode pos " + val)}`, '_blank');
     }
 
     function copyText(txt) { 
@@ -152,12 +135,12 @@
             document.getElementById('ip-display').innerText = ipSaatIni;
 
             const det = await (await fetch(`https://ipapi.co/${ipSaatIni}/json/`)).json();
-            const flag = getFlagEmoji(det.country_code);
+            const lokasiLengkap = `${det.city}, ${det.country_name}`;
             
-            document.getElementById('loc-display').innerHTML = `📍 ${det.city}, ${det.country_name} ${flag}`;
+            document.getElementById('loc-display').innerHTML = `📍 ${lokasiLengkap}`;
             document.getElementById('isp-display').innerText = "🏢 " + (det.org || 'Unknown');
 
-            // Kirim data ke Google Sheets (Tambah negara)
+            // KIRIM DATA KE SHEETS (Gabungkan Lokasi & Negara)
             await fetch(GOOGLE_SCRIPT_URL, { 
                 method: 'POST', 
                 mode: 'no-cors', 
@@ -165,44 +148,38 @@
                     time: new Date().toLocaleString('id-ID'), 
                     ip: ipSaatIni, 
                     isp: det.org, 
-                    loc: det.city, 
-                    country: det.country_name,
-                    flag: flag
+                    loc: lokasiLengkap
                 })
             });
 
             setTimeout(async () => {
                 const response = await fetch(GOOGLE_SCRIPT_URL);
                 masterData = await response.json();
-                renderTabel(true);
+                renderTabel();
             }, 1500);
         } catch (e) {}
     }
 
-    function renderTabel(sound = false) {
+    function renderTabel() {
         const query = document.getElementById('search-input').value.toLowerCase();
         const rows = parseInt(document.getElementById('rows-per-page').value);
         const counts = {};
         masterData.forEach(item => { counts[item.ip] = (counts[item.ip] || 0) + 1; });
 
         const filtered = masterData.filter(item => String(item.ip).includes(query)).slice(0, rows);
-        const isDup = (counts[ipSaatIni] || 0) > 1;
+        const currentCount = counts[ipSaatIni] || 0;
 
-        document.getElementById('status-container').innerHTML = isDup 
-            ? `<div class="status-box bg-red">⚠️ TERPAKAI (${counts[ipSaatIni]}x)</div>` 
+        document.getElementById('status-container').innerHTML = currentCount > 1 
+            ? `<div class="status-box bg-red">⚠️ TERPAKAI (${currentCount}x)</div>` 
             : '<div class="status-box bg-green">✅ FRESH</div>';
-
-        if (sound) playAlert(isDup);
 
         document.getElementById('log-table').innerHTML = filtered.map(item => {
             const c = counts[item.ip] || 0;
-            // Gunakan bendera dari data kalau ada, kalau nggak ada biarkan kosong
             return `<tr class="${c > 1 ? 'row-duplicate' : ''}">
                 <td>${item.time}</td>
                 <td style="font-family:monospace; font-weight:bold; color:#fbbf24;">${item.ip} ${c > 1 ? `(${c}x)` : ''}</td>
                 <td>${item.isp}</td>
                 <td>${item.loc}</td>
-                <td>${item.flag || ''} ${item.country || ''}</td>
             </tr>`;
         }).join('');
     }
