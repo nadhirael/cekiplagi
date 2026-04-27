@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IP Monitor & ZipCode Pro - Final</title>
+    <title>IP Monitor & ZipCode Pro - Fixed</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; padding: 20px; margin: 0; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: #e2e8f0; padding: 20px; margin: 0; }
         .container { max-width: 1000px; margin: auto; padding-bottom: 50px; }
         
         /* MENU NAVIGASI */
@@ -34,7 +34,7 @@
         .btn-page { background: #334155; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
         .btn-page:disabled { opacity: 0.3; cursor: not-allowed; }
         
-        .copy-btn { background: #38bdf8; color: #0f172a; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-left: 10px; }
+        .copy-btn { background: #38bdf8; color: #0f172a; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
         .btn-action { background: #38bdf8; color: #0f172a; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
 
         .page-content { display: none; }
@@ -103,7 +103,7 @@
                 <a href="https://www.speedtest.net" target="_blank" class="btn-action" style="background:#334155; color:white; text-decoration:none;">OPEN SPEEDTEST.NET ↗</a>
             </div>
             <div id="speedtest-frame-container" style="display:none; margin-top:20px;">
-                <iframe id="speedtest-iframe" src="" width="100%" height="350px" frameborder="0" style="border-radius:12px; border:4px solid #38bdf8; background:white;"></iframe>
+                <iframe id="speedtest-iframe" src="" width="100%" height="450px" frameborder="0" style="border-radius:12px; border:4px solid #38bdf8; background:white;"></iframe>
                 <button onclick="stopSpeedtest()" style="margin-top:10px; background:#7f1d1d; color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer;">Stop</button>
             </div>
         </div>
@@ -111,7 +111,7 @@
 
     <div id="zip-code" class="page-content">
         <div class="card">
-            <h3>Cari Kode Pos</h3>
+            <h3>Cari Kode Pos Indonesia</h3>
             <div class="controls-container">
                 <input type="text" id="zip-kec" placeholder="Kecamatan..." style="flex: 1;">
                 <input type="text" id="zip-kab" placeholder="Kabupaten/Kota..." style="flex: 1;">
@@ -120,7 +120,7 @@
             <div id="zip-status" style="margin-bottom: 10px; font-size: 0.9em; color: #38bdf8;"></div>
             <div style="overflow-x: auto;">
                 <table>
-                    <thead><tr><th>Kelurahan/Desa</th><th>Kecamatan</th><th>Kabupaten/Kota</th><th>Kode Pos</th><th>Aksi</th></tr></thead>
+                    <thead><tr><th>Kelurahan/Desa</th><th>Kecamatan</th><th>Kabupaten/Kota</th><th style="text-align:center;">Kode Pos</th><th style="text-align:center;">Aksi</th></tr></thead>
                     <tbody id="zip-table">
                         <tr><td colspan="5" style="text-align:center; padding:20px;">Masukkan wilayah...</td></tr>
                     </tbody>
@@ -131,7 +131,9 @@
 </div>
 
 <script>
+    // GANTI DENGAN URL SCRIPT GOOGLE KAMU
     const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby9ZLQZ33RUf3FU_wnAb1S0kgulHf18RQVNW2H2rjE31luMIzZE53JUZWGdxbgbNxGk/exec';
+    
     let masterData = [];
     let currentPage = 1;
     let rowsPerPage = 10;
@@ -145,6 +147,7 @@
         if (pageId !== 'speed-test') stopSpeedtest();
     }
 
+    // FIX FUNGSI KODE POS
     async function searchZipCode() {
         const kec = document.getElementById('zip-kec').value.trim();
         const kab = document.getElementById('zip-kab').value.trim();
@@ -156,11 +159,9 @@
         tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">Menghubungkan API...</td></tr>';
 
         try {
-            // Coba kombinasi lengkap dulu
             let response = await fetch(`https://kodepos.vercel.app/search?q=${encodeURIComponent(kec + ' ' + kab)}`);
             let resData = await response.json();
 
-            // Kalau gagal, cari berdasarkan kecamatannya saja (lebih luas)
             if (!resData.data || resData.data.length === 0) {
                 response = await fetch(`https://kodepos.vercel.app/search?q=${encodeURIComponent(kec)}`);
                 resData = await response.json();
@@ -170,16 +171,16 @@
                 status.innerText = `Ditemukan ${resData.data.length} hasil.`;
                 tableBody.innerHTML = resData.data.map(item => `
                     <tr>
-                        <td>${item.urban}</td>
+                        <td style="font-weight:bold;">${item.urban}</td>
                         <td>${item.subdistrict}</td>
                         <td>${item.city}</td>
-                        <td style="font-weight:bold; color:#fbbf24;">${item.postalcode}</td>
-                        <td><button class="copy-btn" onclick="copyText('${item.postalcode}')">COPY</button></td>
+                        <td style="font-weight:bold; color:#fbbf24; text-align:center;">${item.postalcode}</td>
+                        <td style="text-align:center;"><button class="copy-btn" onclick="copyText('${item.postalcode}')">COPY</button></td>
                     </tr>
                 `).join('');
             } else {
                 status.innerText = "Data tidak ditemukan.";
-                tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">Coba periksa ejaan wilayah kamu.</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">Data kosong. Periksa ejaan wilayah.</td></tr>';
             }
         } catch (e) {
             status.innerText = "API Error.";
@@ -214,10 +215,12 @@
             document.getElementById('loc-display').innerText = "📍 " + loc;
             document.getElementById('isp-display').innerText = "🏢 " + isp;
 
-            await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ time: new Date().toLocaleString('id-ID'), ip: ipSaatIni, isp, loc, proxy: "Check" })});
+            // Kirim data ke Google Sheets
+            fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ time: new Date().toLocaleString('id-ID'), ip: ipSaatIni, isp, loc })});
 
             setTimeout(async () => {
-                masterData = await (await fetch(GOOGLE_SCRIPT_URL)).json();
+                const res = await fetch(GOOGLE_SCRIPT_URL);
+                masterData = await res.json();
                 renderTabel(true);
             }, 1500);
         } catch (e) {}
