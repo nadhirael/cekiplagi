@@ -3,23 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IP Monitor - Smart Search & Shortlist</title>
+    <title>IP Monitor - Smart Shortlist</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; padding: 20px; }
         .container { max-width: 1000px; margin: auto; }
-        .card { background: #1e293b; padding: 25px; border-radius: 12px; border: 1px solid #334155; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .card { background: #1e293b; padding: 25px; border-radius: 12px; border: 1px solid #334155; margin-bottom: 20px; }
         .ip-text { font-size: 32px; color: #fbbf24; font-weight: bold; font-family: monospace; display: block; margin: 5px 0; }
         .status-box { padding: 12px; border-radius: 8px; font-weight: bold; text-align: center; margin-bottom: 15px; }
         .bg-red { background: #7f1d1d; color: #fecaca; border: 1px solid #dc2626; }
         .bg-green { background: #064e3b; color: #a7f3d0; border: 1px solid #059669; }
         
-        /* SEARCH BOX STYLE */
-        .search-container { margin-bottom: 15px; display: flex; gap: 10px; }
+        /* SEARCH BOX */
+        .search-container { margin-bottom: 15px; }
         #search-input { 
-            flex-grow: 1; padding: 12px; border-radius: 8px; border: 1px solid #334155; 
-            background: #0f172a; color: white; font-size: 1em;
+            width: 100%; padding: 14px; border-radius: 8px; border: 1px solid #334155; 
+            background: #0f172a; color: white; font-size: 1em; box-sizing: border-box;
         }
-        #search-input:focus { border-color: #38bdf8; outline: none; }
+        #search-input:focus { border-color: #38bdf8; outline: none; box-shadow: 0 0 8px rgba(56, 189, 248, 0.4); }
 
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85em; }
         th, td { padding: 12px; border-bottom: 1px solid #334155; text-align: left; }
@@ -28,8 +28,7 @@
         .row-duplicate { background-color: #450a0a !important; color: #fecaca !important; }
         .badge-duplicate { background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.75em; margin-left: 8px; font-weight: bold; }
         
-        .refresh-btn { background: #334155; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; transition: 0.3s; }
-        .refresh-btn:hover { background: #475569; }
+        .refresh-btn { background: #334155; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; float: right; }
     </style>
 </head>
 <body>
@@ -44,20 +43,18 @@
     </div>
 
     <div class="card">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <h3>Histori Database (Shortlist)</h3>
-            <button class="refresh-btn" onclick="location.reload();">Refresh Data</button>
-        </div>
-
+        <button class="refresh-btn" onclick="location.reload();">Refresh Data</button>
+        <h3>Histori Database (Shortlist)</h3>
+        
         <div class="search-container">
-            <input type="text" id="search-input" onkeyup="filterTable()" placeholder="Cari IP, ISP, atau Lokasi (Contoh: 114.8 atau Surabaya)...">
+            <input type="text" id="search-input" placeholder="Cetik IP, ISP, atau 'DUPLIKAT' untuk filter...">
         </div>
 
-        <div style="max-height: 500px; overflow-y: auto;">
-            <table id="ip-table">
+        <div style="max-height: 500px; overflow-y: auto; border: 1px solid #334155; border-radius: 8px;">
+            <table>
                 <thead>
                     <tr>
-                        <th>Waktu Akses</th>
+                        <th>Waktu</th>
                         <th>IPv4 Address</th>
                         <th>ISP</th>
                         <th>Lokasi</th>
@@ -68,25 +65,28 @@
                 </tbody>
             </table>
         </div>
-        <div id="search-count" style="margin-top: 10px; font-size: 0.8em; color: #94a3b8;"></div>
+        <div id="search-count" style="margin-top: 10px; font-size: 0.85em; color: #94a3b8;"></div>
     </div>
 </div>
 
 <script>
     const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby9ZLQZ33RUf3FU_wnAb1S0kgulHf18RQVNW2H2rjE31luMIzZE53JUZWGdxbgbNxGk/exec';
-    let allHistory = []; // Untuk menyimpan data master
+    let rawData = []; // Data asli dari Google Sheets
+    let currentIPAddress = "";
 
     async function init() {
         try {
+            // 1. Ambil IP
             const cfRes = await fetch('https://1.1.1.1/cdn-cgi/trace');
             const cfText = await cfRes.text();
-            const currentIP = cfText.split('\n').find(line => line.startsWith('ip=')).split('=')[1];
-            document.getElementById('ip-display').innerText = currentIP;
+            currentIPAddress = cfText.split('\n').find(line => line.startsWith('ip=')).split('=')[1];
+            document.getElementById('ip-display').innerText = currentIPAddress;
 
+            // 2. Ambil Lokasi
             let isp = "Unknown";
             let loc = "-";
             try {
-                const detRes = await fetch(`https://ipapi.co/${currentIP}/json/`);
+                const detRes = await fetch(`https://ipapi.co/${currentIPAddress}/json/`);
                 const detData = await detRes.json();
                 isp = detData.org || "Unknown";
                 loc = `${detData.city}, ${detData.country_name}`;
@@ -94,71 +94,75 @@
             document.getElementById('loc-display').innerText = `📍 ${loc}`;
             document.getElementById('isp-display').innerText = "ISP: " + isp;
 
+            // 3. Simpan ke Sheets
             const time = new Date().toLocaleString('id-ID');
             await fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
                 mode: 'no-cors',
-                body: JSON.stringify({ time, ip: currentIP, isp, loc, proxy: "Check" })
+                body: JSON.stringify({ time, ip: currentIPAddress, isp, loc, proxy: "Check" })
             });
 
-            setTimeout(async () => {
-                const historyRes = await fetch(GOOGLE_SCRIPT_URL);
-                allHistory = await historyRes.json();
-                renderData(allHistory, currentIP);
-            }, 1500);
+            // 4. Tarik data histori
+            setTimeout(loadData, 1500);
 
         } catch (error) {
             document.getElementById('status-container').innerText = "Gagal memuat database.";
         }
     }
 
-    function renderData(data, currentIP) {
+    async function loadData() {
+        const response = await fetch(GOOGLE_SCRIPT_URL);
+        rawData = await response.json();
+        displayTable(rawData);
+    }
+
+    function displayTable(data) {
         const ipCounts = {};
-        data.forEach(item => {
+        rawData.forEach(item => {
             ipCounts[item.ip] = (ipCounts[item.ip] || 0) + 1;
         });
 
-        if (currentIP && ipCounts[currentIP] > 1) {
+        // Update Header Status
+        if (currentIPAddress && ipCounts[currentIPAddress] > 1) {
             document.getElementById('status-container').innerHTML = '<div class="status-box bg-red">⚠️ IP INI SUDAH PERNAH TERPAKAI!</div>';
-        } else if (currentIP) {
+        } else if (currentIPAddress) {
             document.getElementById('status-container').innerHTML = '<div class="status-box bg-green">✅ IP FRESH / BARU</div>';
         }
 
         const tableBody = document.getElementById('log-table');
         tableBody.innerHTML = data.map(item => {
             const isDup = ipCounts[item.ip] > 1;
-            const rowStyle = isDup ? 'class="row-duplicate"' : '';
-            const label = isDup ? '<span class="badge-duplicate">DUPLIKAT</span>' : '';
+            const rowClass = isDup ? 'class="row-duplicate"' : '';
+            const badge = isDup ? '<span class="badge-duplicate">DUPLIKAT</span>' : '';
 
             return `
-                <tr ${rowStyle}>
+                <tr ${rowClass}>
                     <td>${item.time}</td>
-                    <td style="font-family: monospace; font-weight: bold; color: #fbbf24;">
-                        ${item.ip} ${label}
-                    </td>
+                    <td style="font-family: monospace; font-weight: bold; color: #fbbf24;">${item.ip} ${badge}</td>
                     <td>${item.isp}</td>
                     <td>${item.loc}</td>
                 </tr>
             `;
         }).join('');
-        
-        document.getElementById('search-count').innerText = `Menampilkan ${data.length} baris data.`;
+
+        document.getElementById('search-count').innerText = `Menampilkan ${data.length} baris.`;
     }
 
-    // FUNGSI SHORTLIST / FILTER
-    function filterTable() {
-        const query = document.getElementById('search-input').value.toLowerCase();
-        const filteredData = allHistory.filter(item => {
-            return item.ip.toLowerCase().includes(query) || 
-                   item.isp.toLowerCase().includes(query) || 
-                   item.loc.toLowerCase().includes(query);
-        });
+    // FUNGSI PENCARIAN (SHORTLIST)
+    document.getElementById('search-input').addEventListener('input', function(e) {
+        const keyword = e.target.value.toLowerCase();
         
-        // Render ulang tabel dengan data yang sudah di-filter
-        // currentIP dikosongkan agar tidak mengubah status header saat cari data lama
-        renderData(filteredData, null); 
-        document.getElementById('search-count').innerText = `Ditemukan ${filteredData.length} hasil pencarian.`;
-    }
+        const filtered = rawData.filter(item => {
+            // Cek IP, ISP, Lokasi, atau kata "DUPLIKAT"
+            const isDupText = (rawData.filter(r => r.ip === item.ip).length > 1) ? "duplikat" : "";
+            return item.ip.toLowerCase().includes(keyword) || 
+                   item.isp.toLowerCase().includes(keyword) || 
+                   item.loc.toLowerCase().includes(keyword) ||
+                   isDupText.includes(keyword);
+        });
+
+        displayTable(filtered);
+    });
 
     init();
 </script>
