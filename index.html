@@ -3,32 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IP Monitor - Smart Shortlist</title>
+    <title>IP Monitor - Shortlist Fix</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; padding: 20px; }
         .container { max-width: 1000px; margin: auto; }
         .card { background: #1e293b; padding: 25px; border-radius: 12px; border: 1px solid #334155; margin-bottom: 20px; }
-        .ip-text { font-size: 32px; color: #fbbf24; font-weight: bold; font-family: monospace; display: block; margin: 5px 0; }
+        .ip-text { font-size: 32px; color: #fbbf24; font-weight: bold; font-family: monospace; display: block; margin: 10px 0; }
         .status-box { padding: 12px; border-radius: 8px; font-weight: bold; text-align: center; margin-bottom: 15px; }
         .bg-red { background: #7f1d1d; color: #fecaca; border: 1px solid #dc2626; }
         .bg-green { background: #064e3b; color: #a7f3d0; border: 1px solid #059669; }
         
-        /* SEARCH BOX */
-        .search-container { margin-bottom: 15px; }
+        /* BOX PENCARIAN */
+        .search-container { display: flex; gap: 10px; margin-bottom: 15px; }
         #search-input { 
-            width: 100%; padding: 14px; border-radius: 8px; border: 1px solid #334155; 
-            background: #0f172a; color: white; font-size: 1em; box-sizing: border-box;
+            flex-grow: 1; padding: 12px; border-radius: 8px; border: 1px solid #334155; 
+            background: #0f172a; color: white; font-size: 1em;
         }
-        #search-input:focus { border-color: #38bdf8; outline: none; box-shadow: 0 0 8px rgba(56, 189, 248, 0.4); }
+        .btn-cari { background: #38bdf8; color: #0f172a; font-weight: bold; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; }
+        .btn-cari:hover { background: #0ea5e9; }
 
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85em; }
         th, td { padding: 12px; border-bottom: 1px solid #334155; text-align: left; }
         th { background: #0f172a; color: #94a3b8; position: sticky; top: 0; }
         
         .row-duplicate { background-color: #450a0a !important; color: #fecaca !important; }
-        .badge-duplicate { background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.75em; margin-left: 8px; font-weight: bold; }
-        
-        .refresh-btn { background: #334155; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; float: right; }
+        .badge-duplicate { background: #ef4444; color: white; padding: 2px 5px; border-radius: 4px; font-size: 0.7em; margin-left: 5px; }
     </style>
 </head>
 <body>
@@ -36,26 +35,28 @@
 <div class="container">
     <div class="card">
         <h2>Koneksi Saat Ini</h2>
-        <div id="status-container">Sinkronisasi Database...</div>
+        <div id="status-container">Menghubungkan ke Database...</div>
         <span id="ip-display" class="ip-text">Mencari IP...</span>
-        <div id="loc-display" style="font-size: 1.1em; color: #38bdf8;"></div>
-        <div id="isp-display" style="opacity: 0.8; margin-top: 5px;"></div>
+        <div id="isp-display" style="opacity: 0.8;">Mencari detail ISP...</div>
     </div>
 
     <div class="card">
-        <button class="refresh-btn" onclick="location.reload();">Refresh Data</button>
-        <h3>Histori Database (Shortlist)</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h3>Histori Shortlist</h3>
+            <button onclick="location.reload();" style="background:#334155; color:white; border:none; padding:5px 15px; border-radius:5px; cursor:pointer;">Refresh Full</button>
+        </div>
         
         <div class="search-container">
-            <input type="text" id="search-input" placeholder="Cetik IP, ISP, atau 'DUPLIKAT' untuk filter...">
+            <input type="text" id="search-input" placeholder="Masukkan IP atau nama kota...">
+            <button class="btn-cari" onclick="filterData()">Cari / Filter</button>
         </div>
 
-        <div style="max-height: 500px; overflow-y: auto; border: 1px solid #334155; border-radius: 8px;">
+        <div style="max-height: 450px; overflow-y: auto; border: 1px solid #334155;">
             <table>
                 <thead>
                     <tr>
                         <th>Waktu</th>
-                        <th>IPv4 Address</th>
+                        <th>IP Address</th>
                         <th>ISP</th>
                         <th>Lokasi</th>
                     </tr>
@@ -65,67 +66,64 @@
                 </tbody>
             </table>
         </div>
-        <div id="search-count" style="margin-top: 10px; font-size: 0.85em; color: #94a3b8;"></div>
+        <div id="search-count" style="margin-top: 10px; font-size: 0.8em; color: #94a3b8;"></div>
     </div>
 </div>
 
 <script>
     const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby9ZLQZ33RUf3FU_wnAb1S0kgulHf18RQVNW2H2rjE31luMIzZE53JUZWGdxbgbNxGk/exec';
-    let rawData = []; // Data asli dari Google Sheets
-    let currentIPAddress = "";
+    let masterData = []; // Data asli dari Sheets
+    let ipSaatIni = "";
 
     async function init() {
         try {
-            // 1. Ambil IP
-            const cfRes = await fetch('https://1.1.1.1/cdn-cgi/trace');
-            const cfText = await cfRes.text();
-            currentIPAddress = cfText.split('\n').find(line => line.startsWith('ip=')).split('=')[1];
-            document.getElementById('ip-display').innerText = currentIPAddress;
+            // Ambil IP via Cloudflare
+            const resIP = await fetch('https://1.1.1.1/cdn-cgi/trace');
+            const txtIP = await resIP.text();
+            ipSaatIni = txtIP.split('\n').find(l => l.startsWith('ip=')).split('=')[1];
+            document.getElementById('ip-display').innerText = ipSaatIni;
 
-            // 2. Ambil Lokasi
+            // Ambil Detail ISP
             let isp = "Unknown";
             let loc = "-";
             try {
-                const detRes = await fetch(`https://ipapi.co/${currentIPAddress}/json/`);
-                const detData = await detRes.json();
-                isp = detData.org || "Unknown";
-                loc = `${detData.city}, ${detData.country_name}`;
+                const resDet = await fetch(`https://ipapi.co/${ipSaatIni}/json/`);
+                const det = await resDet.json();
+                isp = det.org || "Unknown";
+                loc = `${det.city}, ${det.country_name}`;
             } catch(e) {}
-            document.getElementById('loc-display').innerText = `📍 ${loc}`;
             document.getElementById('isp-display').innerText = "ISP: " + isp;
 
-            // 3. Simpan ke Sheets
+            // Kirim ke Sheets
             const time = new Date().toLocaleString('id-ID');
             await fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
                 mode: 'no-cors',
-                body: JSON.stringify({ time, ip: currentIPAddress, isp, loc, proxy: "Check" })
+                body: JSON.stringify({ time, ip: ipSaatIni, isp, loc, proxy: "Check" })
             });
 
-            // 4. Tarik data histori
-            setTimeout(loadData, 1500);
+            // Tarik Histori (Delay 2 detik agar Sheets update dulu)
+            setTimeout(async () => {
+                const resHist = await fetch(GOOGLE_SCRIPT_URL);
+                masterData = await resHist.json();
+                renderTabel(masterData);
+            }, 2000);
 
-        } catch (error) {
-            document.getElementById('status-container').innerText = "Gagal memuat database.";
+        } catch (err) {
+            document.getElementById('status-container').innerText = "Error Sinkronisasi.";
         }
     }
 
-    async function loadData() {
-        const response = await fetch(GOOGLE_SCRIPT_URL);
-        rawData = await response.json();
-        displayTable(rawData);
-    }
-
-    function displayTable(data) {
+    function renderTabel(data) {
         const ipCounts = {};
-        rawData.forEach(item => {
+        masterData.forEach(item => {
             ipCounts[item.ip] = (ipCounts[item.ip] || 0) + 1;
         });
 
-        // Update Header Status
-        if (currentIPAddress && ipCounts[currentIPAddress] > 1) {
+        // Update Header
+        if (ipSaatIni && ipCounts[ipSaatIni] > 1) {
             document.getElementById('status-container').innerHTML = '<div class="status-box bg-red">⚠️ IP INI SUDAH PERNAH TERPAKAI!</div>';
-        } else if (currentIPAddress) {
+        } else if (ipSaatIni) {
             document.getElementById('status-container').innerHTML = '<div class="status-box bg-green">✅ IP FRESH / BARU</div>';
         }
 
@@ -134,35 +132,33 @@
             const isDup = ipCounts[item.ip] > 1;
             const rowClass = isDup ? 'class="row-duplicate"' : '';
             const badge = isDup ? '<span class="badge-duplicate">DUPLIKAT</span>' : '';
-
-            return `
-                <tr ${rowClass}>
-                    <td>${item.time}</td>
-                    <td style="font-family: monospace; font-weight: bold; color: #fbbf24;">${item.ip} ${badge}</td>
-                    <td>${item.isp}</td>
-                    <td>${item.loc}</td>
-                </tr>
-            `;
+            return `<tr ${rowClass}>
+                        <td>${item.time}</td>
+                        <td style="font-family:monospace; font-weight:bold; color:#fbbf24;">${item.ip} ${badge}</td>
+                        <td>${item.isp}</td>
+                        <td>${item.loc}</td>
+                    </tr>`;
         }).join('');
-
         document.getElementById('search-count').innerText = `Menampilkan ${data.length} baris.`;
     }
 
-    // FUNGSI PENCARIAN (SHORTLIST)
-    document.getElementById('search-input').addEventListener('input', function(e) {
-        const keyword = e.target.value.toLowerCase();
-        
-        const filtered = rawData.filter(item => {
-            // Cek IP, ISP, Lokasi, atau kata "DUPLIKAT"
-            const isDupText = (rawData.filter(r => r.ip === item.ip).length > 1) ? "duplikat" : "";
-            return item.ip.toLowerCase().includes(keyword) || 
-                   item.isp.toLowerCase().includes(keyword) || 
-                   item.loc.toLowerCase().includes(keyword) ||
-                   isDupText.includes(keyword);
-        });
+    // FUNGSI CARI / FILTER MANUAL
+    function filterData() {
+        const q = document.getElementById('search-input').value.toLowerCase();
+        if (!q) {
+            renderTabel(masterData);
+            return;
+        }
 
-        displayTable(filtered);
-    });
+        const filtered = masterData.filter(item => {
+            const statusDup = (masterData.filter(m => m.ip === item.ip).length > 1) ? "duplikat" : "";
+            return item.ip.toLowerCase().includes(q) || 
+                   item.isp.toLowerCase().includes(q) || 
+                   item.loc.toLowerCase().includes(q) ||
+                   statusDup.includes(q);
+        });
+        renderTabel(filtered);
+    }
 
     init();
 </script>
