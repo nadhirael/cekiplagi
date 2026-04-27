@@ -3,18 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IP Monitor - Ultra Bypass</title>
+    <title>IP Monitor - Duplicate Tracker</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; padding: 20px; }
-        .container { max-width: 900px; margin: auto; }
-        .card { background: #1e293b; padding: 25px; border-radius: 12px; border: 1px solid #334155; margin-bottom: 20px; }
-        .ip-text { font-size: 32px; color: #fbbf24; font-weight: bold; font-family: monospace; display: block; margin: 10px 0; }
+        .container { max-width: 950px; margin: auto; }
+        .card { background: #1e293b; padding: 25px; border-radius: 12px; border: 1px solid #334155; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .ip-text { font-size: 32px; color: #fbbf24; font-weight: bold; font-family: monospace; display: block; margin: 5px 0; }
         .status-box { padding: 12px; border-radius: 8px; font-weight: bold; text-align: center; margin-bottom: 15px; }
         .bg-red { background: #7f1d1d; color: #fecaca; border: 1px solid #dc2626; }
         .bg-green { background: #064e3b; color: #a7f3d0; border: 1px solid #059669; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85em; }
         th, td { padding: 12px; border-bottom: 1px solid #334155; text-align: left; }
         th { background: #0f172a; color: #94a3b8; }
+        
+        /* WARNA UNTUK BARIS DUPLIKAT DI TABEL */
+        .row-duplicate { background-color: #450a0a !important; color: #fecaca !important; }
+        .badge-duplicate { background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.75em; margin-left: 8px; font-weight: bold; }
+        
         button { background: #334155; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; float: right; }
     </style>
 </head>
@@ -22,15 +27,16 @@
 
 <div class="container">
     <div class="card">
-        <h2>Detail Koneksi</h2>
-        <div id="status-container">Menghubungkan ke Database...</div>
+        <h2>Koneksi Saat Ini</h2>
+        <div id="status-container">Sinkronisasi Database...</div>
         <span id="ip-display" class="ip-text">Mencari IP...</span>
-        <div id="isp-display" style="opacity: 0.8;">Mencari ISP...</div>
+        <div id="loc-display" style="font-size: 1.1em; color: #38bdf8;"></div>
+        <div id="isp-display" style="opacity: 0.8; margin-top: 5px;"></div>
     </div>
 
     <div class="card" style="overflow-x: auto;">
         <button onclick="location.reload();">Refresh Data</button>
-        <h3>Histori Database (Sinkron)</h3>
+        <h3>Histori Database (Penanda Duplikat)</h3>
         <table>
             <thead>
                 <tr>
@@ -41,69 +47,84 @@
                 </tr>
             </thead>
             <tbody id="log-table">
-                <tr><td colspan="4" style="text-align:center;">Memuat histori...</td></tr>
+                <tr><td colspan="4" style="text-align:center;">Memuat data...</td></tr>
             </tbody>
         </table>
     </div>
 </div>
 
 <script>
-    // URL Web App Google Script kamu
+    // URL Web App kamu tetap sama
     const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby9ZLQZ33RUf3FU_wnAb1S0kgulHf18RQVNW2H2rjE31luMIzZE53JUZWGdxbgbNxGk/exec';
 
     async function init() {
         try {
-            // STEP 1: Ambil IP via Cloudflare (Bypass 403)
+            // 1. Ambil IP
             const cfRes = await fetch('https://1.1.1.1/cdn-cgi/trace');
             const cfText = await cfRes.text();
             const currentIP = cfText.split('\n').find(line => line.startsWith('ip=')).split('=')[1];
-            
             document.getElementById('ip-display').innerText = currentIP;
 
-            // STEP 2: Ambil Detail via API Cadangan (ipapi.co) jika ipwhois blokir
-            let isp = "Unknown ISP";
+            // 2. Ambil Detail ISP
+            let isp = "Unknown";
             let loc = "-";
             try {
                 const detRes = await fetch(`https://ipapi.co/${currentIP}/json/`);
                 const detData = await detRes.json();
                 isp = detData.org || "Unknown";
                 loc = `${detData.city}, ${detData.country_name}`;
-            } catch(e) { console.log("Detail API blocked, using defaults"); }
-
+            } catch(e) {}
+            document.getElementById('loc-display').innerText = `📍 ${loc}`;
             document.getElementById('isp-display').innerText = "ISP: " + isp;
 
-            // STEP 3: Kirim ke Google Sheets
+            // 3. Kirim ke Sheets
             const time = new Date().toLocaleString('id-ID');
             await fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
                 mode: 'no-cors',
-                body: JSON.stringify({ time, ip: currentIP, isp, loc, proxy: "Check Sheets" })
+                body: JSON.stringify({ time, ip: currentIP, isp, loc, proxy: "Check" })
             });
 
-            // STEP 4: Ambil Histori
-            const historyRes = await fetch(GOOGLE_SCRIPT_URL);
-            const history = await historyRes.json();
+            // 4. Tarik Histori & Beri Tanda Warna
+            setTimeout(async () => {
+                const historyRes = await fetch(GOOGLE_SCRIPT_URL);
+                const history = await historyRes.json();
 
-            // Cek Duplikat
-            const isUsed = history.some(item => item.ip === currentIP && item.time !== time);
-            if (isUsed) {
-                document.getElementById('status-container').innerHTML = '<div class="status-box bg-red">⚠️ IP INI SUDAH PERNAH TERPAKAI!</div>';
-            } else {
-                document.getElementById('status-container').innerHTML = '<div class="status-box bg-green">✅ IP BARU TERCATAT</div>';
-            }
+                // Hitung berapa kali tiap IP muncul
+                const ipCounts = {};
+                history.forEach(item => {
+                    ipCounts[item.ip] = (ipCounts[item.ip] || 0) + 1;
+                });
 
-            // Update Tabel
-            document.getElementById('log-table').innerHTML = history.map(item => `
-                <tr>
-                    <td>${item.time}</td>
-                    <td style="font-family: monospace; font-weight: bold; color: #fbbf24;">${item.ip}</td>
-                    <td>${item.isp}</td>
-                    <td>${item.loc}</td>
-                </tr>
-            `).join('');
+                // Status Header
+                if (ipCounts[currentIP] > 1) {
+                    document.getElementById('status-container').innerHTML = '<div class="status-box bg-red">⚠️ IP INI SUDAH PERNAH TERPAKAI!</div>';
+                } else {
+                    document.getElementById('status-container').innerHTML = '<div class="status-box bg-green">✅ IP FRESH / BARU</div>';
+                }
+
+                // Render ke Tabel dengan Warna
+                const tableBody = document.getElementById('log-table');
+                tableBody.innerHTML = history.map(item => {
+                    const isDup = ipCounts[item.ip] > 1;
+                    const rowStyle = isDup ? 'class="row-duplicate"' : '';
+                    const label = isDup ? '<span class="badge-duplicate">DUPLIKAT</span>' : '';
+
+                    return `
+                        <tr ${rowStyle}>
+                            <td>${item.time}</td>
+                            <td style="font-family: monospace; font-weight: bold; color: #fbbf24;">
+                                ${item.ip} ${label}
+                            </td>
+                            <td>${item.isp}</td>
+                            <td>${item.loc}</td>
+                        </tr>
+                    `;
+                }).join('');
+            }, 1500);
 
         } catch (error) {
-            document.getElementById('status-container').innerText = "Koneksi Database Gagal. Pastikan Google Sheets sudah di-Share 'Anyone with link'.";
+            document.getElementById('status-container').innerText = "Gagal memuat database.";
         }
     }
 
