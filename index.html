@@ -3,16 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IP Monitor Pro - One Search</title>
+    <title>IP Monitor Pro - Dual Shortcut</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; padding: 20px; margin: 0; }
         .container { max-width: 1000px; margin: auto; padding-bottom: 50px; }
         
-        /* AREA NAVIGASI: EDIT LINK KAMU DI SINI */
+        /* NAVIGASI: TAMBAH/EDIT LINK DI SINI */
         .nav-menu { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #334155; padding-bottom: 10px; overflow-x: auto; align-items: center; }
         .nav-link { padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; background: #1e293b; color: #94a3b8; text-decoration: none; white-space: nowrap; font-size: 13px; }
         .nav-link.active { background: #38bdf8; color: #0f172a; }
         .nav-link:hover:not(.active) { background: #334155; color: white; }
+        /* Warna Tombol Shortcut */
+        .btn-blue { background: #4f46e5 !important; color: white !important; }
+        .btn-purple { background: #7c3aed !important; color: white !important; }
 
         .card { background: #1e293b; padding: 25px; border-radius: 12px; border: 1px solid #334155; margin-bottom: 20px; }
         .ip-text { font-size: 32px; color: #fbbf24; font-weight: bold; font-family: monospace; }
@@ -46,7 +49,8 @@
         
         <span style="color: #334155; margin: 0 5px;">|</span>
         
-        <a href="https://stake.com/ru" target="_blank" class="nav-link" style="background:#4f46e5; color:white;">Stake ↗</a>
+        <a href="https://stake.com/ru" target="_blank" class="nav-link btn-blue">Stake RU ↗</a>
+        <a href="https://stake1022.com/ru" target="_blank" class="nav-link btn-purple">Stake 1022 ↗</a>
     </div>
 
     <div id="ip-monitor" class="page-content active">
@@ -71,7 +75,6 @@
                 <select id="rows-per-page" onchange="renderTabel()">
                     <option value="10">10 Baris</option>
                     <option value="20">20 Baris</option>
-                    <option value="50">50 Baris</option>
                 </select>
             </div>
             <div style="overflow-x: auto;">
@@ -92,7 +95,6 @@
 
     <div id="speed-test" class="page-content">
         <div class="card" style="text-align: center;">
-            <h3>Cek Speed</h3>
             <iframe src="https://fast.com" width="100%" height="450px" frameborder="0" style="background:white; border-radius:12px;"></iframe>
         </div>
     </div>
@@ -100,10 +102,9 @@
     <div id="zip-search" class="page-content">
         <div class="card" style="text-align: center; padding: 50px 20px;">
             <div style="max-width: 500px; margin: auto;">
-                <input type="text" id="single-query" placeholder="Ketik Kecamatan & Kabupaten..." style="width: 100%; border-radius: 30px; padding: 15px; margin-bottom: 20px; text-align: center; border: 1px solid #334155;">
+                <input type="text" id="single-query" placeholder="Ketik Wilayah..." style="width: 100%; border-radius: 30px; padding: 15px; margin-bottom: 20px; text-align: center; border: 1px solid #334155;">
                 <button class="btn-action" onclick="searchZip()">CARI DI GOOGLE</button>
             </div>
-            <p style="margin-top: 20px; font-size: 0.8em; color: #94a3b8;">💡 Terbuka otomatis di Tab Baru Google.</p>
         </div>
     </div>
 </div>
@@ -152,12 +153,7 @@
             await fetch(GOOGLE_SCRIPT_URL, { 
                 method: 'POST', 
                 mode: 'no-cors', 
-                body: JSON.stringify({ 
-                    time: new Date().toLocaleString('id-ID'), 
-                    ip: ipSaatIni, 
-                    isp: det.org, 
-                    loc: lokasi
-                })
+                body: JSON.stringify({ time: new Date().toLocaleString('id-ID'), ip: ipSaatIni, isp: det.org, loc: lokasi })
             });
 
             setTimeout(async () => {
