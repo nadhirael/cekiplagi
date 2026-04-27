@@ -35,12 +35,14 @@
         .btn-page:disabled { opacity: 0.3; cursor: not-allowed; }
         
         .copy-btn { background: #38bdf8; color: #0f172a; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-left: 10px; }
-        .btn-speed { display: inline-block; background: #38bdf8; color: #0f172a; padding: 15px 30px; border-radius: 8px; font-weight: bold; text-decoration: none; transition: 0.3s; }
+        .btn-speed { display: inline-block; background: #38bdf8; color: #0f172a; padding: 15px 30px; border-radius: 8px; font-weight: bold; text-decoration: none; transition: 0.3s; border: none; cursor: pointer; }
         .btn-speed:hover { transform: scale(1.05); background: #0ea5e9; }
 
         .page-content { display: none; }
         .page-content.active { display: block; animation: fadeIn 0.4s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        #speedtest-frame-container { margin-top: 20px; display: none; }
     </style>
 </head>
 <body>
@@ -105,17 +107,19 @@
     <div id="speed-test" class="page-content">
         <div class="card" style="text-align: center; padding: 40px;">
             <h3 style="margin-top:0;">Cek Kecepatan Internet</h3>
-            <p style="color: #94a3b8; margin-bottom: 25px;">Gunakan widget di bawah atau buka panel Speedtest penuh.</p>
+            <p style="color: #94a3b8; margin-bottom: 25px;">Klik tombol untuk memulai tes atau buka Speedtest.net di tab baru.</p>
             
-            <a href="https://www.speedtest.net" target="_blank" class="btn-speed">
-                BUKA SPEEDTEST.NET (TAB BARU)
-            </a>
+            <div style="display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;">
+                <button class="btn-speed" onclick="startSpeedtest()">MULAI TEST (FAST.COM)</button>
+                <a href="https://www.speedtest.net" target="_blank" class="btn-speed" style="background: #334155; color: white;">OPEN SPEEDTEST.NET ↗</a>
+            </div>
 
-            <div style="margin: 30px 0; border-top: 1px solid #334155; padding-top: 30px;">
-                <p style="font-size: 0.9em; color: #fbbf24; font-weight: bold; margin-bottom: 15px;">Widget Cepat (Fast.com):</p>
+            <div id="speedtest-frame-container">
+                <p style="font-size: 0.9em; color: #fbbf24; font-weight: bold; margin: 20px 0 10px 0;">Menjalankan Test Kecepatan...</p>
                 <div style="background: white; border-radius: 12px; overflow: hidden; height: 350px; border: 4px solid #38bdf8;">
-                    <iframe src="https://fast.com" width="100%" height="350px" frameborder="0"></iframe>
+                    <iframe id="speedtest-iframe" src="" width="100%" height="350px" frameborder="0"></iframe>
                 </div>
+                <button onclick="stopSpeedtest()" style="margin-top: 15px; background: #7f1d1d; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer;">Hentikan / Reset</button>
             </div>
         </div>
     </div>
@@ -133,6 +137,23 @@
         document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
         document.getElementById(pageId).classList.add('active');
         element.classList.add('active');
+        // Hentikan speedtest otomatis kalau pindah halaman biar gak berat
+        if (pageId !== 'speed-test') stopSpeedtest();
+    }
+
+    // FUNGSI KHUSUS SPEEDTEST
+    function startSpeedtest() {
+        const container = document.getElementById('speedtest-frame-container');
+        const iframe = document.getElementById('speedtest-iframe');
+        container.style.display = 'block';
+        iframe.src = "https://fast.com"; // Baru diload pas diklik
+    }
+
+    function stopSpeedtest() {
+        const container = document.getElementById('speedtest-frame-container');
+        const iframe = document.getElementById('speedtest-iframe');
+        iframe.src = ""; // Kosongkan lagi biar berhenti
+        container.style.display = 'none';
     }
 
     async function init() {
