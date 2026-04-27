@@ -3,31 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IP Monitor & Zip Pro - One Search</title>
+    <title>IP Monitor Pro - Flag Edition</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; padding: 20px; margin: 0; }
-        .container { max-width: 1000px; margin: auto; padding-bottom: 50px; }
+        .container { max-width: 1100px; margin: auto; padding-bottom: 50px; }
         
         .nav-menu { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #334155; padding-bottom: 10px; overflow-x: auto; }
-        .nav-link { padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; background: #1e293b; color: #94a3b8; white-space: nowrap; }
+        .nav-link { padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; background: #1e293b; color: #94a3b8; white-space: nowrap; text-decoration: none; font-size: 14px; }
         .nav-link.active { background: #38bdf8; color: #0f172a; }
+        .nav-link:hover:not(.active) { background: #334155; color: white; }
 
-        .card { background: #1e293b; padding: 25px; border-radius: 12px; border: 1px solid #334155; margin-bottom: 20px; }
+        .card { background: #1e293b; padding: 25px; border-radius: 12px; border: 1px solid #334155; margin-bottom: 20px; box-shadow: 0 10px 15px rgba(0,0,0,0.2); }
         .ip-text { font-size: 32px; color: #fbbf24; font-weight: bold; font-family: monospace; }
         .status-box { padding: 12px; border-radius: 8px; font-weight: bold; text-align: center; margin-bottom: 15px; }
         .bg-red { background: #7f1d1d; color: #fecaca; border: 1px solid #dc2626; }
         .bg-green { background: #064e3b; color: #a7f3d0; border: 1px solid #059669; }
         
         .controls-container { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; align-items: center; }
-        input, select { padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; font-size: 16px; }
+        input, select { padding: 10px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; }
         
-        table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
         th, td { padding: 12px; border-bottom: 1px solid #334155; text-align: left; }
         th { background: #0f172a; color: #94a3b8; }
         .row-duplicate { background-color: #450a0a !important; color: #fecaca !important; }
         
         .copy-btn { background: #38bdf8; color: #0f172a; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        .btn-action { background: #38bdf8; color: #0f172a; border: none; padding: 15px 30px; border-radius: 30px; cursor: pointer; font-weight: bold; }
+        .btn-action { background: #38bdf8; color: #0f172a; border: none; padding: 15px 25px; border-radius: 30px; cursor: pointer; font-weight: bold; }
+        .flag { font-size: 1.2em; vertical-align: middle; margin-right: 5px; }
 
         .page-content { display: none; }
         .page-content.active { display: block; animation: fadeIn 0.4s; }
@@ -41,17 +43,23 @@
         <div class="nav-link active" onclick="openPage('ip-monitor', this)">IP Monitor</div>
         <div class="nav-link" onclick="openPage('speed-test', this)">Speedtest</div>
         <div class="nav-link" onclick="openPage('zip-search', this)">Cari Kode Pos</div>
+        <a href="https://stake.com" target="_blank" class="nav-link" style="background: #4f46e5; color: white;" title="Klik kanan > Buka di Jendela Penyamaran">Stake ↗</a>
     </div>
 
     <div id="ip-monitor" class="page-content active">
         <div class="card">
-            <h2>Koneksi Saat Ini</h2>
-            <div id="status-container">Sinkronisasi...</div>
-            <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                    <h2>Koneksi Saat Ini</h2>
+                    <div id="status-container">Sinkronisasi...</div>
+                </div>
+                <button onclick="location.reload()" class="copy-btn" style="background:#334155; color:white; padding: 10px 20px;">🔄 REFRESH</button>
+            </div>
+            <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 10px;">
                 <span id="ip-display" class="ip-text">Mencari IP...</span>
                 <button class="copy-btn" onclick="copyText(document.getElementById('ip-display').innerText)">COPY IP</button>
             </div>
-            <div id="loc-display" style="color: #38bdf8; margin-top: 10px; font-weight: bold;">📍 Mencari Lokasi...</div>
+            <div id="loc-display" style="color: #38bdf8; margin-top: 10px; font-weight: bold; font-size: 1.1em;">📍 Mencari Lokasi...</div>
             <div id="isp-display" style="opacity: 0.8; margin-top: 4px;">🏢 Mencari ISP...</div>
         </div>
 
@@ -62,11 +70,20 @@
                 <select id="rows-per-page" onchange="renderTabel()">
                     <option value="10">10 Baris</option>
                     <option value="20">20 Baris</option>
+                    <option value="50">50 Baris</option>
                 </select>
             </div>
             <div style="overflow-x: auto;">
                 <table>
-                    <thead><tr><th>Waktu</th><th>IP Address</th><th>ISP</th><th>Lokasi</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th>Waktu</th>
+                            <th>IP Address</th>
+                            <th>ISP</th>
+                            <th>Kota</th>
+                            <th>Negara</th>
+                        </tr>
+                    </thead>
                     <tbody id="log-table"></tbody>
                 </table>
             </div>
@@ -82,14 +99,11 @@
 
     <div id="zip-search" class="page-content">
         <div class="card" style="text-align: center; padding: 50px 20px;">
-            <img src="https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_92x30dp.png" alt="Google" style="width: 120px; margin-bottom: 25px;">
-            <div style="max-width: 600px; margin: auto;">
-                <input type="text" id="single-query" placeholder="Ketik Kecamatan & Kabupaten..." 
-                       style="width: 100%; border-radius: 30px; padding: 18px; margin-bottom: 20px; text-align: center; border: 1px solid #334155;">
-                <br>
+            <img src="https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_92x30dp.png" alt="Google" style="width: 100px; margin-bottom: 20px;">
+            <div style="max-width: 500px; margin: auto;">
+                <input type="text" id="single-query" placeholder="Ketik Kecamatan & Kabupaten..." style="width: 100%; border-radius: 30px; padding: 15px; margin-bottom: 15px; text-align: center; border: 1px solid #334155;">
                 <button class="btn-action" onclick="searchZip()">CARI KODE POS</button>
             </div>
-            <p style="margin-top: 30px; font-size: 0.85em; color: #94a3b8;">💡 Otomatis mencari kode pos di Tab Baru Google.</p>
         </div>
     </div>
 </div>
@@ -106,20 +120,19 @@
         element.classList.add('active');
     }
 
-    // FUNGSI SATU PENCARIAN
+    // Fungsi konversi kode negara ke Emoji Bendera
+    function getFlagEmoji(countryCode) {
+        if(!countryCode) return "🏳️";
+        const codePoints = countryCode.toUpperCase().split('').map(char => 127397 + char.charCodeAt());
+        return String.fromCodePoint(...codePoints);
+    }
+
     function searchZip() {
         const val = document.getElementById('single-query').value.trim();
-        if (!val) { alert("Isi dulu wilayahnya mas!"); return; }
-        
-        // Cek apakah user sudah ngetik "kode pos", kalau belum kita tambahin
+        if (!val) return;
         let q = val.toLowerCase().includes("kode pos") ? val : "kode pos " + val;
         window.open(`https://www.google.com/search?q=${encodeURIComponent(q)}`, '_blank');
     }
-
-    // Support Enter
-    document.getElementById('single-query')?.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') searchZip();
-    });
 
     function playAlert(dup) {
         const msg = new SpeechSynthesisUtterance(dup ? 'Duplicate' : 'Fresh');
@@ -139,10 +152,24 @@
             document.getElementById('ip-display').innerText = ipSaatIni;
 
             const det = await (await fetch(`https://ipapi.co/${ipSaatIni}/json/`)).json();
-            document.getElementById('loc-display').innerText = "📍 " + (det.city || '') + ", " + (det.country_name || '');
+            const flag = getFlagEmoji(det.country_code);
+            
+            document.getElementById('loc-display').innerHTML = `📍 ${det.city}, ${det.country_name} ${flag}`;
             document.getElementById('isp-display').innerText = "🏢 " + (det.org || 'Unknown');
 
-            await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ time: new Date().toLocaleString('id-ID'), ip: ipSaatIni, isp: det.org, loc: det.city, proxy: "Check" })});
+            // Kirim data ke Google Sheets (Tambah negara)
+            await fetch(GOOGLE_SCRIPT_URL, { 
+                method: 'POST', 
+                mode: 'no-cors', 
+                body: JSON.stringify({ 
+                    time: new Date().toLocaleString('id-ID'), 
+                    ip: ipSaatIni, 
+                    isp: det.org, 
+                    loc: det.city, 
+                    country: det.country_name,
+                    flag: flag
+                })
+            });
 
             setTimeout(async () => {
                 const response = await fetch(GOOGLE_SCRIPT_URL);
@@ -169,10 +196,13 @@
 
         document.getElementById('log-table').innerHTML = filtered.map(item => {
             const c = counts[item.ip] || 0;
+            // Gunakan bendera dari data kalau ada, kalau nggak ada biarkan kosong
             return `<tr class="${c > 1 ? 'row-duplicate' : ''}">
                 <td>${item.time}</td>
                 <td style="font-family:monospace; font-weight:bold; color:#fbbf24;">${item.ip} ${c > 1 ? `(${c}x)` : ''}</td>
-                <td>${item.isp}</td><td>${item.loc}</td>
+                <td>${item.isp}</td>
+                <td>${item.loc}</td>
+                <td>${item.flag || ''} ${item.country || ''}</td>
             </tr>`;
         }).join('');
     }
