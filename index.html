@@ -3,45 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IP Monitor</title>
+    <title>IP Monitor - Audio Alert Pro</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; padding: 20px; margin: 0; }
         .container { max-width: 1000px; margin: auto; padding-bottom: 50px; }
-        
         .nav-menu { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #334155; padding-bottom: 10px; }
         .nav-link { padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; background: #1e293b; color: #94a3b8; }
         .nav-link.active { background: #38bdf8; color: #0f172a; }
         .nav-link:hover:not(.active) { background: #334155; color: white; }
-
         .card { background: #1e293b; padding: 25px; border-radius: 12px; border: 1px solid #334155; margin-bottom: 20px; box-shadow: 0 10px 15px rgba(0,0,0,0.2); }
         .ip-text { font-size: 32px; color: #fbbf24; font-weight: bold; font-family: monospace; }
         .status-box { padding: 12px; border-radius: 8px; font-weight: bold; text-align: center; margin-bottom: 15px; }
         .bg-red { background: #7f1d1d; color: #fecaca; border: 1px solid #dc2626; }
         .bg-green { background: #064e3b; color: #a7f3d0; border: 1px solid #059669; }
-        
         .controls-container { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; align-items: center; }
         #search-input { flex-grow: 1; padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; font-size: 16px; }
         .rows-select { padding: 11px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; }
-
         table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
         th, td { padding: 12px; border-bottom: 1px solid #334155; text-align: left; }
         th { background: #0f172a; color: #94a3b8; }
-        
-        /* WARNA DUPLIKAT & COUNTER */
         .row-duplicate { background-color: #450a0a !important; color: #fecaca !important; }
-        .badge-duplicate { background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.75em; margin-left: 8px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
-        
+        .badge-duplicate { background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.75em; margin-left: 8px; font-weight: bold; }
         .pagination { display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 20px; }
         .btn-page { background: #334155; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
         .btn-page:disabled { opacity: 0.3; cursor: not-allowed; }
-        
         .copy-btn { background: #38bdf8; color: #0f172a; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-left: 10px; }
         .btn-speed { display: inline-block; background: #38bdf8; color: #0f172a; padding: 15px 30px; border-radius: 8px; font-weight: bold; text-decoration: none; transition: 0.3s; border: none; cursor: pointer; }
-
         .page-content { display: none; }
         .page-content.active { display: block; animation: fadeIn 0.4s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         #speedtest-frame-container { margin-top: 20px; display: none; }
+        
+        /* TOGGLE SUARA */
+        .sound-toggle { font-size: 0.8em; color: #94a3b8; display: flex; align-items: center; gap: 5px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -50,6 +44,11 @@
     <div class="nav-menu">
         <div class="nav-link active" onclick="openPage('ip-monitor', this)">IP Monitor</div>
         <div class="nav-link" onclick="openPage('speed-test', this)">Speedtest</div>
+        <div style="margin-left: auto; display: flex; align-items: center;">
+            <label class="sound-toggle">
+                <input type="checkbox" id="sound-active" checked> 🔊 Suara Aktif
+            </label>
+        </div>
     </div>
 
     <div id="ip-monitor" class="page-content active">
@@ -69,7 +68,6 @@
                 <h3 style="margin:0;">Histori & Shortlist</h3>
                 <button onclick="location.reload()" style="background:#334155; border:none; color:white; padding:6px 15px; cursor:pointer; border-radius:6px; font-size: 0.8em;">Refresh Data</button>
             </div>
-            
             <div class="controls-container">
                 <input type="text" id="search-input" placeholder="Cari IP, Kota, atau ketik 'duplikat'..." oninput="resetToFirstPage()">
                 <select id="rows-per-page" class="rows-select" onchange="updateRowsPerPage()">
@@ -78,23 +76,12 @@
                     <option value="50">50 Baris</option>
                 </select>
             </div>
-
             <div style="overflow-x: auto;">
                 <table>
-                    <thead>
-                        <tr>
-                            <th>Waktu</th>
-                            <th>IP Address</th>
-                            <th>ISP</th>
-                            <th>Lokasi</th>
-                        </tr>
-                    </thead>
-                    <tbody id="log-table">
-                        <tr><td colspan="4" style="text-align:center; padding:30px;">Memuat histori...</td></tr>
-                    </tbody>
+                    <thead><tr><th>Waktu</th><th>IP Address</th><th>ISP</th><th>Lokasi</th></tr></thead>
+                    <tbody id="log-table"><tr><td colspan="4" style="text-align:center; padding:30px;">Memuat histori...</td></tr></tbody>
                 </table>
             </div>
-
             <div class="pagination">
                 <button id="prev-btn" class="btn-page" onclick="changePage(-1)">Prev</button>
                 <span id="page-label" class="page-info">Page 1</span>
@@ -126,6 +113,22 @@
     let currentPage = 1;
     let rowsPerPage = 10;
     let ipSaatIni = "";
+
+    // FUNGSI SUARA (RINGAN)
+    function playAlert(type) {
+        if (!document.getElementById('sound-active').checked) return;
+        const msg = new SpeechSynthesisUtterance();
+        msg.lang = 'en-US';
+        msg.rate = 1.2;
+        if (type === 'fresh') {
+            msg.text = 'Fresh';
+            msg.pitch = 1.5;
+        } else {
+            msg.text = 'Duplicate';
+            msg.pitch = 0.5;
+        }
+        window.speechSynthesis.speak(msg);
+    }
 
     function openPage(pageId, element) {
         document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
@@ -166,20 +169,15 @@
             setTimeout(async () => {
                 const res = await fetch(GOOGLE_SCRIPT_URL);
                 masterData = await res.json();
-                renderTabel();
+                renderTabel(true); // Kirim true untuk bunyi pas pertama load
             }, 1500);
         } catch (e) { document.getElementById('status-container').innerText = "Koneksi Gagal."; }
     }
 
-    function renderTabel() {
+    function renderTabel(shouldPlaySound = false) {
         const query = document.getElementById('search-input').value.toLowerCase();
-        
-        // HITUNG SEMUA IP DULU UNTUK COUNTER
         const ipCounts = {};
-        masterData.forEach(item => {
-            const key = String(item.ip);
-            ipCounts[key] = (ipCounts[key] || 0) + 1;
-        });
+        masterData.forEach(item => { ipCounts[String(item.ip)] = (ipCounts[String(item.ip)] || 0) + 1; });
 
         let filteredData = masterData.filter(item => {
             const isDup = ipCounts[String(item.ip)] > 1;
@@ -190,32 +188,33 @@
         });
 
         const totalPages = Math.ceil(filteredData.length / rowsPerPage) || 1;
-        if (currentPage > totalPages) currentPage = totalPages;
         const start = (currentPage - 1) * rowsPerPage;
         const pageData = filteredData.slice(start, start + rowsPerPage);
 
-        // Header Status
         const currentCount = ipCounts[String(ipSaatIni)] || 0;
-        document.getElementById('status-container').innerHTML = currentCount > 1 
+        const isCurrentlyDup = currentCount > 1;
+        
+        document.getElementById('status-container').innerHTML = isCurrentlyDup 
             ? `<div class="status-box bg-red">⚠️ IP INI SUDAH PERNAH TERPAKAI (${currentCount}x)!</div>` 
             : '<div class="status-box bg-green">✅ IP FRESH / BARU</div>';
 
-        const tableBody = document.getElementById('log-table');
-        tableBody.innerHTML = pageData.map(item => {
+        // JALANKAN SUARA
+        if (shouldPlaySound && ipSaatIni) {
+            playAlert(isCurrentlyDup ? 'duplicate' : 'fresh');
+        }
+
+        document.getElementById('log-table').innerHTML = pageData.map(item => {
             const count = ipCounts[String(item.ip)] || 0;
             const isDup = count > 1;
-            // TAMBAHKAN TULISAN BERAPA KALINYA DISINI
-            const badge = isDup ? `<span class="badge-duplicate">DUPLIKAT (${count}x)</span>` : '';
-            
             return `<tr class="${isDup ? 'row-duplicate' : ''}">
                 <td>${item.time}</td>
-                <td style="font-family:monospace; font-weight:bold; color:#fbbf24;">${item.ip} ${badge}</td>
+                <td style="font-family:monospace; font-weight:bold; color:#fbbf24;">${item.ip} ${isDup ? `<span class="badge-duplicate">DUPLIKAT (${count}x)</span>` : ''}</td>
                 <td>${item.isp}</td>
                 <td>${item.loc}</td>
             </tr>`;
         }).join('');
 
-        document.getElementById('page-label').innerText = `Page ${currentPage} of ${totalPages} (${filteredData.length} total)`;
+        document.getElementById('page-label').innerText = `Page ${currentPage} of ${totalPages}`;
         document.getElementById('prev-btn').disabled = currentPage === 1;
         document.getElementById('next-btn').disabled = currentPage === totalPages;
     }
@@ -223,7 +222,7 @@
     function updateRowsPerPage() { rowsPerPage = parseInt(document.getElementById('rows-per-page').value); currentPage = 1; renderTabel(); }
     function changePage(step) { currentPage += step; renderTabel(); }
     function resetToFirstPage() { currentPage = 1; renderTabel(); }
-    function copyCurrentIP() { navigator.clipboard.writeText(ipSaatIni).then(() => alert("IP Berhasil disalin!")); }
+    function copyCurrentIP() { navigator.clipboard.writeText(ipSaatIni).then(() => alert("IP Disalin!")); }
 
     init();
 </script>
