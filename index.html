@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IP Monitor & Speedtest Pro</title>
+    <title>IP Monitor</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; padding: 20px; margin: 0; }
         .container { max-width: 1000px; margin: auto; padding-bottom: 50px; }
         
-        /* MENU NAVIGASI */
         .nav-menu { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #334155; padding-bottom: 10px; }
         .nav-link { padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; background: #1e293b; color: #94a3b8; }
         .nav-link.active { background: #38bdf8; color: #0f172a; }
@@ -27,8 +26,10 @@
         table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
         th, td { padding: 12px; border-bottom: 1px solid #334155; text-align: left; }
         th { background: #0f172a; color: #94a3b8; }
+        
+        /* WARNA DUPLIKAT & COUNTER */
         .row-duplicate { background-color: #450a0a !important; color: #fecaca !important; }
-        .badge-duplicate { background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.75em; margin-left: 8px; font-weight: bold; }
+        .badge-duplicate { background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.75em; margin-left: 8px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
         
         .pagination { display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 20px; }
         .btn-page { background: #334155; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
@@ -36,12 +37,10 @@
         
         .copy-btn { background: #38bdf8; color: #0f172a; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-left: 10px; }
         .btn-speed { display: inline-block; background: #38bdf8; color: #0f172a; padding: 15px 30px; border-radius: 8px; font-weight: bold; text-decoration: none; transition: 0.3s; border: none; cursor: pointer; }
-        .btn-speed:hover { transform: scale(1.05); background: #0ea5e9; }
 
         .page-content { display: none; }
         .page-content.active { display: block; animation: fadeIn 0.4s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
         #speedtest-frame-container { margin-top: 20px; display: none; }
     </style>
 </head>
@@ -106,17 +105,13 @@
 
     <div id="speed-test" class="page-content">
         <div class="card" style="text-align: center; padding: 40px;">
-            <h3 style="margin-top:0;">Cek Kecepatan Internet</h3>
-            <p style="color: #94a3b8; margin-bottom: 25px;">Klik tombol untuk memulai tes atau buka Speedtest.net di tab baru.</p>
-            
+            <h3>Cek Kecepatan Internet</h3>
             <div style="display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;">
                 <button class="btn-speed" onclick="startSpeedtest()">MULAI TEST (FAST.COM)</button>
                 <a href="https://www.speedtest.net" target="_blank" class="btn-speed" style="background: #334155; color: white;">OPEN SPEEDTEST.NET ↗</a>
             </div>
-
             <div id="speedtest-frame-container">
-                <p style="font-size: 0.9em; color: #fbbf24; font-weight: bold; margin: 20px 0 10px 0;">Menjalankan Test Kecepatan...</p>
-                <div style="background: white; border-radius: 12px; overflow: hidden; height: 350px; border: 4px solid #38bdf8;">
+                <div style="background: white; border-radius: 12px; overflow: hidden; height: 350px; border: 4px solid #38bdf8; margin-top:20px;">
                     <iframe id="speedtest-iframe" src="" width="100%" height="350px" frameborder="0"></iframe>
                 </div>
                 <button onclick="stopSpeedtest()" style="margin-top: 15px; background: #7f1d1d; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer;">Hentikan / Reset</button>
@@ -137,23 +132,17 @@
         document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
         document.getElementById(pageId).classList.add('active');
         element.classList.add('active');
-        // Hentikan speedtest otomatis kalau pindah halaman biar gak berat
         if (pageId !== 'speed-test') stopSpeedtest();
     }
 
-    // FUNGSI KHUSUS SPEEDTEST
     function startSpeedtest() {
-        const container = document.getElementById('speedtest-frame-container');
-        const iframe = document.getElementById('speedtest-iframe');
-        container.style.display = 'block';
-        iframe.src = "https://fast.com"; // Baru diload pas diklik
+        document.getElementById('speedtest-frame-container').style.display = 'block';
+        document.getElementById('speedtest-iframe').src = "https://fast.com";
     }
 
     function stopSpeedtest() {
-        const container = document.getElementById('speedtest-frame-container');
-        const iframe = document.getElementById('speedtest-iframe');
-        iframe.src = ""; // Kosongkan lagi biar berhenti
-        container.style.display = 'none';
+        document.getElementById('speedtest-frame-container').style.display = 'none';
+        document.getElementById('speedtest-iframe').src = "";
     }
 
     async function init() {
@@ -184,8 +173,16 @@
 
     function renderTabel() {
         const query = document.getElementById('search-input').value.toLowerCase();
+        
+        // HITUNG SEMUA IP DULU UNTUK COUNTER
+        const ipCounts = {};
+        masterData.forEach(item => {
+            const key = String(item.ip);
+            ipCounts[key] = (ipCounts[key] || 0) + 1;
+        });
+
         let filteredData = masterData.filter(item => {
-            const isDup = masterData.filter(m => String(m.ip) === String(item.ip)).length > 1;
+            const isDup = ipCounts[String(item.ip)] > 1;
             return String(item.ip).toLowerCase().includes(query) || 
                    String(item.isp).toLowerCase().includes(query) || 
                    String(item.loc).toLowerCase().includes(query) ||
@@ -197,17 +194,22 @@
         const start = (currentPage - 1) * rowsPerPage;
         const pageData = filteredData.slice(start, start + rowsPerPage);
 
-        const currentCount = masterData.filter(x => String(x.ip) === ipSaatIni).length;
+        // Header Status
+        const currentCount = ipCounts[String(ipSaatIni)] || 0;
         document.getElementById('status-container').innerHTML = currentCount > 1 
-            ? '<div class="status-box bg-red">⚠️ IP INI SUDAH PERNAH TERPAKAI!</div>' 
+            ? `<div class="status-box bg-red">⚠️ IP INI SUDAH PERNAH TERPAKAI (${currentCount}x)!</div>` 
             : '<div class="status-box bg-green">✅ IP FRESH / BARU</div>';
 
         const tableBody = document.getElementById('log-table');
         tableBody.innerHTML = pageData.map(item => {
-            const isDup = masterData.filter(x => String(x.ip) === String(item.ip)).length > 1;
+            const count = ipCounts[String(item.ip)] || 0;
+            const isDup = count > 1;
+            // TAMBAHKAN TULISAN BERAPA KALINYA DISINI
+            const badge = isDup ? `<span class="badge-duplicate">DUPLIKAT (${count}x)</span>` : '';
+            
             return `<tr class="${isDup ? 'row-duplicate' : ''}">
                 <td>${item.time}</td>
-                <td style="font-family:monospace; font-weight:bold; color:#fbbf24;">${item.ip} ${isDup ? '<span class="badge-duplicate">DUPLIKAT</span>' : ''}</td>
+                <td style="font-family:monospace; font-weight:bold; color:#fbbf24;">${item.ip} ${badge}</td>
                 <td>${item.isp}</td>
                 <td>${item.loc}</td>
             </tr>`;
@@ -221,9 +223,7 @@
     function updateRowsPerPage() { rowsPerPage = parseInt(document.getElementById('rows-per-page').value); currentPage = 1; renderTabel(); }
     function changePage(step) { currentPage += step; renderTabel(); }
     function resetToFirstPage() { currentPage = 1; renderTabel(); }
-    function copyCurrentIP() { 
-        navigator.clipboard.writeText(ipSaatIni).then(() => alert("IP Berhasil disalin!"));
-    }
+    function copyCurrentIP() { navigator.clipboard.writeText(ipSaatIni).then(() => alert("IP Berhasil disalin!")); }
 
     init();
 </script>
