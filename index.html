@@ -3,45 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IP Monitor & ZipCode Pro - Fixed</title>
+    <title>IP Monitor & ZipCode Pro - Final Fix</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: #e2e8f0; padding: 20px; margin: 0; }
+        body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; padding: 20px; margin: 0; }
         .container { max-width: 1000px; margin: auto; padding-bottom: 50px; }
-        
-        /* MENU NAVIGASI */
         .nav-menu { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #334155; padding-bottom: 10px; overflow-x: auto; }
         .nav-link { padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; background: #1e293b; color: #94a3b8; white-space: nowrap; }
         .nav-link.active { background: #38bdf8; color: #0f172a; }
-        .nav-link:hover:not(.active) { background: #334155; color: white; }
-
         .card { background: #1e293b; padding: 25px; border-radius: 12px; border: 1px solid #334155; margin-bottom: 20px; box-shadow: 0 10px 15px rgba(0,0,0,0.2); }
         .ip-text { font-size: 32px; color: #fbbf24; font-weight: bold; font-family: monospace; }
         .status-box { padding: 12px; border-radius: 8px; font-weight: bold; text-align: center; margin-bottom: 15px; }
         .bg-red { background: #7f1d1d; color: #fecaca; border: 1px solid #dc2626; }
         .bg-green { background: #064e3b; color: #a7f3d0; border: 1px solid #059669; }
-        
         .controls-container { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; align-items: center; }
         input, select { padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; font-size: 14px; }
-        #search-input { flex-grow: 1; }
-
         table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
         th, td { padding: 12px; border-bottom: 1px solid #334155; text-align: left; }
         th { background: #0f172a; color: #94a3b8; }
         .row-duplicate { background-color: #450a0a !important; color: #fecaca !important; }
-        .badge-duplicate { background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.75em; margin-left: 8px; font-weight: bold; }
-        
-        .pagination { display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 20px; }
-        .btn-page { background: #334155; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
-        .btn-page:disabled { opacity: 0.3; cursor: not-allowed; }
-        
         .copy-btn { background: #38bdf8; color: #0f172a; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
         .btn-action { background: #38bdf8; color: #0f172a; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
-
         .page-content { display: none; }
         .page-content.active { display: block; animation: fadeIn 0.4s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        
-        .sound-toggle { font-size: 0.8em; color: #94a3b8; display: flex; align-items: center; gap: 5px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -52,7 +36,7 @@
         <div class="nav-link" onclick="openPage('speed-test', this)">Speedtest</div>
         <div class="nav-link" onclick="openPage('zip-code', this)">Cari Kode Pos</div>
         <div style="margin-left: auto; display: flex; align-items: center;">
-            <label class="sound-toggle"><input type="checkbox" id="sound-active" checked> 🔊 Suara</label>
+            <label style="font-size:0.8em; color:#94a3b8;"><input type="checkbox" id="sound-active" checked> 🔊 Suara</label>
         </div>
     </div>
 
@@ -69,16 +53,15 @@
         </div>
 
         <div class="card">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 15px; align-items: center;">
-                <h3 style="margin:0;">Histori & Shortlist</h3>
-                <button onclick="location.reload()" style="background:#334155; border:none; color:white; padding:6px 15px; cursor:pointer; border-radius:6px; font-size: 0.8em;">Refresh</button>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin:0;">Histori Database</h3>
+                <button onclick="location.reload()" class="copy-btn" style="background:#334155; color:white;">Refresh</button>
             </div>
             <div class="controls-container">
-                <input type="text" id="search-input" placeholder="Cari IP atau 'duplikat'..." oninput="resetToFirstPage()">
-                <select id="rows-per-page" onchange="updateRowsPerPage()">
+                <input type="text" id="search-input" placeholder="Cari IP..." oninput="renderTabel()">
+                <select id="rows-per-page" onchange="renderTabel()">
                     <option value="10">10 Baris</option>
                     <option value="20">20 Baris</option>
-                    <option value="50">50 Baris</option>
                 </select>
             </div>
             <div style="overflow-x: auto;">
@@ -87,31 +70,22 @@
                     <tbody id="log-table"></tbody>
                 </table>
             </div>
-            <div class="pagination">
-                <button id="prev-btn" class="btn-page" onclick="changePage(-1)">Prev</button>
-                <span id="page-label" class="page-info">Page 1</span>
-                <button id="next-btn" class="btn-page" onclick="changePage(1)">Next</button>
-            </div>
         </div>
     </div>
 
     <div id="speed-test" class="page-content">
-        <div class="card" style="text-align: center; padding: 40px;">
+        <div class="card" style="text-align: center;">
             <h3>Test Kecepatan</h3>
-            <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
-                <button class="btn-action" onclick="startSpeedtest()">MULAI FAST.COM</button>
-                <a href="https://www.speedtest.net" target="_blank" class="btn-action" style="background:#334155; color:white; text-decoration:none;">OPEN SPEEDTEST.NET ↗</a>
-            </div>
+            <button class="btn-action" onclick="startSpeedtest()">MULAI FAST.COM</button>
             <div id="speedtest-frame-container" style="display:none; margin-top:20px;">
-                <iframe id="speedtest-iframe" src="" width="100%" height="450px" frameborder="0" style="border-radius:12px; border:4px solid #38bdf8; background:white;"></iframe>
-                <button onclick="stopSpeedtest()" style="margin-top:10px; background:#7f1d1d; color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer;">Stop</button>
+                <iframe id="speedtest-iframe" src="" width="100%" height="400px" frameborder="0" style="background:white; border-radius:12px;"></iframe>
             </div>
         </div>
     </div>
 
     <div id="zip-code" class="page-content">
         <div class="card">
-            <h3>Cari Kode Pos Indonesia</h3>
+            <h3>Cari Kode Pos</h3>
             <div class="controls-container">
                 <input type="text" id="zip-kec" placeholder="Kecamatan..." style="flex: 1;">
                 <input type="text" id="zip-kab" placeholder="Kabupaten/Kota..." style="flex: 1;">
@@ -120,7 +94,7 @@
             <div id="zip-status" style="margin-bottom: 10px; font-size: 0.9em; color: #38bdf8;"></div>
             <div style="overflow-x: auto;">
                 <table>
-                    <thead><tr><th>Kelurahan/Desa</th><th>Kecamatan</th><th>Kabupaten/Kota</th><th style="text-align:center;">Kode Pos</th><th style="text-align:center;">Aksi</th></tr></thead>
+                    <thead><tr><th>Kelurahan/Desa</th><th>Kecamatan</th><th>Kabupaten/Kota</th><th>Kode Pos</th><th>Aksi</th></tr></thead>
                     <tbody id="zip-table">
                         <tr><td colspan="5" style="text-align:center; padding:20px;">Masukkan wilayah...</td></tr>
                     </tbody>
@@ -131,12 +105,8 @@
 </div>
 
 <script>
-    // GANTI DENGAN URL SCRIPT GOOGLE KAMU
     const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby9ZLQZ33RUf3FU_wnAb1S0kgulHf18RQVNW2H2rjE31luMIzZE53JUZWGdxbgbNxGk/exec';
-    
     let masterData = [];
-    let currentPage = 1;
-    let rowsPerPage = 10;
     let ipSaatIni = "";
 
     function openPage(pageId, element) {
@@ -144,61 +114,53 @@
         document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
         document.getElementById(pageId).classList.add('active');
         element.classList.add('active');
-        if (pageId !== 'speed-test') stopSpeedtest();
     }
 
-    // FIX FUNGSI KODE POS
     async function searchZipCode() {
         const kec = document.getElementById('zip-kec').value.trim();
         const kab = document.getElementById('zip-kab').value.trim();
         const tableBody = document.getElementById('zip-table');
         const status = document.getElementById('zip-status');
 
-        if (!kec) { alert("Minimal isi Kecamatan!"); return; }
+        if (!kec) { alert("Isi Kecamatan!"); return; }
         status.innerText = "Mencari...";
-        tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">Menghubungkan API...</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">Menghubungkan...</td></tr>';
 
         try {
-            let response = await fetch(`https://kodepos.vercel.app/search?q=${encodeURIComponent(kec + ' ' + kab)}`);
-            let resData = await response.json();
+            // Menggunakan API alternatif yang lebih stabil
+            const response = await fetch(`https://kodepos.vercel.app/search?q=${encodeURIComponent(kec + " " + kab)}`);
+            const json = await response.json();
+            const results = json.data || [];
 
-            if (!resData.data || resData.data.length === 0) {
-                response = await fetch(`https://kodepos.vercel.app/search?q=${encodeURIComponent(kec)}`);
-                resData = await response.json();
-            }
-
-            if (resData.data && resData.data.length > 0) {
-                status.innerText = `Ditemukan ${resData.data.length} hasil.`;
-                tableBody.innerHTML = resData.data.map(item => `
+            if (results.length > 0) {
+                status.innerText = `Ditemukan ${results.length} hasil.`;
+                tableBody.innerHTML = results.map(item => `
                     <tr>
-                        <td style="font-weight:bold;">${item.urban}</td>
-                        <td>${item.subdistrict}</td>
-                        <td>${item.city}</td>
-                        <td style="font-weight:bold; color:#fbbf24; text-align:center;">${item.postalcode}</td>
-                        <td style="text-align:center;"><button class="copy-btn" onclick="copyText('${item.postalcode}')">COPY</button></td>
+                        <td>${item.urban || '-'}</td>
+                        <td>${item.subdistrict || '-'}</td>
+                        <td>${item.city || '-'}</td>
+                        <td style="font-weight:bold; color:#fbbf24;">${item.postalcode || '-'}</td>
+                        <td><button class="copy-btn" onclick="copyText('${item.postalcode}')">COPY</button></td>
                     </tr>
                 `).join('');
             } else {
-                status.innerText = "Data tidak ditemukan.";
-                tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">Data kosong. Periksa ejaan wilayah.</td></tr>';
+                status.innerText = "Tidak ditemukan.";
+                tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">Data tidak ditemukan. Periksa ejaan.</td></tr>';
             }
         } catch (e) {
             status.innerText = "API Error.";
-            tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">Gagal mengambil data.</td></tr>';
         }
     }
 
-    function playAlert(type) {
+    function playAlert(dup) {
         if (!document.getElementById('sound-active').checked) return;
-        const msg = new SpeechSynthesisUtterance();
+        const msg = new SpeechSynthesisUtterance(dup ? 'Duplicate' : 'Fresh');
         msg.lang = 'en-US';
-        msg.text = type === 'fresh' ? 'Fresh' : 'Duplicate';
         window.speechSynthesis.speak(msg);
     }
 
     function startSpeedtest() { document.getElementById('speedtest-frame-container').style.display='block'; document.getElementById('speedtest-iframe').src="https://fast.com"; }
-    function stopSpeedtest() { document.getElementById('speedtest-frame-container').style.display='none'; document.getElementById('speedtest-iframe').src=""; }
-    function copyText(txt) { navigator.clipboard.writeText(txt).then(() => alert("Tersalin: " + txt)); }
+    function copyText(txt) { navigator.clipboard.writeText(txt).then(() => alert("Salin: " + txt)); }
 
     async function init() {
         try {
@@ -207,63 +169,43 @@
             ipSaatIni = txtIP.split('\n').find(l => l.startsWith('ip=')).split('=')[1];
             document.getElementById('ip-display').innerText = ipSaatIni;
 
-            let isp = "Unknown", loc = "-";
-            try {
-                const det = await (await fetch(`https://ipapi.co/${ipSaatIni}/json/`)).json();
-                isp = det.org || "Unknown"; loc = `${det.city || ''}, ${det.country_name || ''}`;
-            } catch(e) {}
-            document.getElementById('loc-display').innerText = "📍 " + loc;
-            document.getElementById('isp-display').innerText = "🏢 " + isp;
+            const det = await (await fetch(`https://ipapi.co/${ipSaatIni}/json/`)).json();
+            document.getElementById('loc-display').innerText = "📍 " + (det.city || '') + ", " + (det.country_name || '');
+            document.getElementById('isp-display').innerText = "🏢 " + (det.org || 'Unknown');
 
-            // Kirim data ke Google Sheets
-            fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ time: new Date().toLocaleString('id-ID'), ip: ipSaatIni, isp, loc })});
+            await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ time: new Date().toLocaleString('id-ID'), ip: ipSaatIni, isp: det.org, loc: det.city, proxy: "Check" })});
 
             setTimeout(async () => {
-                const res = await fetch(GOOGLE_SCRIPT_URL);
-                masterData = await res.json();
+                masterData = await (await fetch(GOOGLE_SCRIPT_URL)).json();
                 renderTabel(true);
             }, 1500);
         } catch (e) {}
     }
 
-    function renderTabel(shouldPlaySound = false) {
+    function renderTabel(sound = false) {
         const query = document.getElementById('search-input').value.toLowerCase();
-        const ipCounts = {};
-        masterData.forEach(item => { ipCounts[String(item.ip)] = (ipCounts[String(item.ip)] || 0) + 1; });
+        const rows = parseInt(document.getElementById('rows-per-page').value);
+        const counts = {};
+        masterData.forEach(item => { counts[item.ip] = (counts[item.ip] || 0) + 1; });
 
-        let filteredData = masterData.filter(item => {
-            const isDup = ipCounts[String(item.ip)] > 1;
-            return String(item.ip).toLowerCase().includes(query) || (isDup && "duplikat".includes(query));
-        });
+        const filtered = masterData.filter(item => String(item.ip).includes(query)).slice(0, rows);
+        const isDup = (counts[ipSaatIni] || 0) > 1;
 
-        const totalPages = Math.ceil(filteredData.length / rowsPerPage) || 1;
-        const pageData = filteredData.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
+        document.getElementById('status-container').innerHTML = isDup 
+            ? `<div class="status-box bg-red">⚠️ TERPAKAI (${counts[ipSaatIni]}x)</div>` 
+            : '<div class="status-box bg-green">✅ FRESH</div>';
 
-        const currentCount = ipCounts[String(ipSaatIni)] || 0;
-        document.getElementById('status-container').innerHTML = currentCount > 1 
-            ? `<div class="status-box bg-red">⚠️ TERPAKAI (${currentCount}x)!</div>` 
-            : '<div class="status-box bg-green">✅ FRESH / BARU</div>';
+        if (sound) playAlert(isDup);
 
-        if (shouldPlaySound && ipSaatIni) playAlert(currentCount > 1 ? 'dup' : 'fresh');
-
-        document.getElementById('log-table').innerHTML = pageData.map(item => {
-            const count = ipCounts[String(item.ip)] || 0;
-            const isDup = count > 1;
-            return `<tr class="${isDup ? 'row-duplicate' : ''}">
+        document.getElementById('log-table').innerHTML = filtered.map(item => {
+            const c = counts[item.ip] || 0;
+            return `<tr class="${c > 1 ? 'row-duplicate' : ''}">
                 <td>${item.time}</td>
-                <td style="font-family:monospace; font-weight:bold; color:#fbbf24;">${item.ip} ${isDup ? `<span class="badge-duplicate">(${count}x)</span>` : ''}</td>
+                <td style="font-family:monospace; font-weight:bold; color:#fbbf24;">${item.ip} ${c > 1 ? `(${c}x)` : ''}</td>
                 <td>${item.isp}</td><td>${item.loc}</td>
             </tr>`;
         }).join('');
-
-        document.getElementById('page-label').innerText = `Page ${currentPage} of ${totalPages}`;
-        document.getElementById('prev-btn').disabled = currentPage === 1;
-        document.getElementById('next-btn').disabled = currentPage === totalPages;
     }
-
-    function updateRowsPerPage() { rowsPerPage = parseInt(document.getElementById('rows-per-page').value); currentPage = 1; renderTabel(); }
-    function changePage(step) { currentPage += step; renderTabel(); }
-    function resetToFirstPage() { currentPage = 1; renderTabel(); }
 
     init();
 </script>
