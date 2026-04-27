@@ -3,190 +3,172 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IP Monitor - Shortlist & Duplicate Tracker</title>
+    <title>IP Monitor - Paginated & Smart</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: #e2e8f0; padding: 20px; margin: 0; }
+        body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; padding: 20px; margin: 0; }
         .container { max-width: 1000px; margin: auto; padding-bottom: 50px; }
-        .card { background: #1e293b; padding: 25px; border-radius: 12px; border: 1px solid #334155; margin-bottom: 20px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
-        .ip-text { font-size: clamp(24px, 5vw, 36px); color: #fbbf24; font-weight: bold; font-family: 'Courier New', Courier, monospace; display: block; margin: 10px 0; }
+        .card { background: #1e293b; padding: 25px; border-radius: 12px; border: 1px solid #334155; margin-bottom: 20px; box-shadow: 0 10px 15px rgba(0,0,0,0.2); }
+        .ip-text { font-size: 32px; color: #fbbf24; font-weight: bold; font-family: monospace; }
         .status-box { padding: 12px; border-radius: 8px; font-weight: bold; text-align: center; margin-bottom: 15px; }
         .bg-red { background: #7f1d1d; color: #fecaca; border: 1px solid #dc2626; }
         .bg-green { background: #064e3b; color: #a7f3d0; border: 1px solid #059669; }
         
-        /* SEARCH UI */
         .search-container { display: flex; gap: 10px; margin-bottom: 15px; }
-        #search-input { 
-            flex-grow: 1; padding: 12px; border-radius: 8px; border: 1px solid #334155; 
-            background: #0f172a; color: white; font-size: 16px;
-        }
-        .btn-cari { background: #38bdf8; color: #0f172a; font-weight: bold; border: none; padding: 10px 25px; border-radius: 8px; cursor: pointer; transition: 0.2s; }
-        .btn-cari:hover { background: #0ea5e9; transform: translateY(-1px); }
-
-        /* TABLE UI */
-        .table-wrapper { max-height: 500px; overflow-y: auto; border: 1px solid #334155; border-radius: 8px; background: #1e293b; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
-        th { background: #0f172a; color: #94a3b8; padding: 15px; text-align: left; position: sticky; top: 0; z-index: 10; }
-        td { padding: 12px 15px; border-bottom: 1px solid #334155; }
+        #search-input { flex-grow: 1; padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; }
         
-        /* DUPLICATE MARKER */
+        table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+        th, td { padding: 12px; border-bottom: 1px solid #334155; text-align: left; }
+        th { background: #0f172a; color: #94a3b8; }
         .row-duplicate { background-color: #450a0a !important; color: #fecaca !important; }
         .badge-duplicate { background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.75em; margin-left: 8px; font-weight: bold; }
         
-        .refresh-btn { background: #334155; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 0.8em; }
+        /* PAGINATION UI */
+        .pagination { display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 20px; }
+        .btn-page { background: #334155; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
+        .btn-page:disabled { opacity: 0.3; cursor: not-allowed; }
+        .page-info { font-size: 0.9em; color: #94a3b8; }
+
+        .copy-btn { background: #38bdf8; color: #0f172a; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.7em; font-weight: bold; margin-left: 10px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="card">
-        <h2 style="margin-top:0;">Koneksi Saat Ini</h2>
-        <div id="status-container">Sinkronisasi Database...</div>
-        <span id="ip-display" class="ip-text">Mencari IP...</span>
-        <div id="loc-display" style="font-size: 1.1em; color: #38bdf8;">📍 Lokasi: -</div>
-        <div id="isp-display" style="opacity: 0.8; margin-top: 5px;">🏢 ISP: -</div>
+        <h2>Koneksi Saat Ini</h2>
+        <div id="status-container">Sinkronisasi...</div>
+        <div style="display: flex; align-items: center;">
+            <span id="ip-display" class="ip-text">Mencari IP...</span>
+            <button class="copy-btn" onclick="copyCurrentIP()">COPY IP</button>
+        </div>
+        <div id="loc-display" style="color: #38bdf8; margin-top: 10px;"></div>
+        <div id="isp-display" style="opacity: 0.8;"></div>
     </div>
 
     <div class="card">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h3 style="margin:0;">Histori & Shortlist</h3>
-            <button class="refresh-btn" onclick="location.reload();">Refresh Data</button>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+            <h3>Histori Database</h3>
+            <button onclick="location.reload()" style="background:none; border:1px solid #334155; color:white; cursor:pointer; border-radius:4px;">Refresh</button>
         </div>
         
         <div class="search-container">
-            <input type="text" id="search-input" placeholder="Cari IP, Kota, ISP, atau ketik 'duplikat'...">
-            <button class="btn-cari" onclick="filterData()">Cari / Filter</button>
+            <input type="text" id="search-input" placeholder="Cari IP, Kota, atau 'duplikat'..." oninput="resetToFirstPage()">
         </div>
 
-        <div class="table-wrapper">
+        <div style="overflow-x: auto;">
             <table>
                 <thead>
                     <tr>
-                        <th>Waktu Akses</th>
-                        <th>IPv4 Address</th>
+                        <th>Waktu</th>
+                        <th>IP Address</th>
                         <th>ISP</th>
                         <th>Lokasi</th>
                     </tr>
                 </thead>
-                <tbody id="log-table">
-                    <tr><td colspan="4" style="text-align:center; padding: 40px;">Memuat histori dari Google Sheets...</td></tr>
-                </tbody>
+                <tbody id="log-table"></tbody>
             </table>
         </div>
-        <div id="search-count" style="margin-top: 12px; font-size: 0.85em; color: #94a3b8;"></div>
+
+        <div class="pagination">
+            <button id="prev-btn" class="btn-page" onclick="changePage(-1)">Previous</button>
+            <span id="page-label" class="page-info">Page 1</span>
+            <button id="next-btn" class="btn-page" onclick="changePage(1)">Next</button>
+        </div>
     </div>
 </div>
 
 <script>
     const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby9ZLQZ33RUf3FU_wnAb1S0kgulHf18RQVNW2H2rjE31luMIzZE53JUZWGdxbgbNxGk/exec';
-    let masterData = []; 
-    let currentIP = "";
+    let masterData = [];
+    let filteredData = [];
+    let currentPage = 1;
+    const rowsPerPage = 10; // UBAH DISINI MAU TAMPIL BERAPA BARIS PER PAGE
+    let ipSaatIni = "";
 
     async function init() {
         try {
-            // 1. Ambil IP via Cloudflare
             const resIP = await fetch('https://1.1.1.1/cdn-cgi/trace');
             const txtIP = await resIP.text();
-            currentIP = txtIP.split('\n').find(l => l.startsWith('ip=')).split('=')[1];
-            document.getElementById('ip-display').innerText = currentIP;
+            ipSaatIni = txtIP.split('\n').find(l => l.startsWith('ip=')).split('=')[1];
+            document.getElementById('ip-display').innerText = ipSaatIni;
 
-            // 2. Ambil Info Lokasi
-            let isp = "Unknown";
-            let loc = "-";
+            let isp = "Unknown", loc = "-";
             try {
-                const resDet = await fetch(`https://ipapi.co/${currentIP}/json/`);
-                const det = await resDet.json();
-                isp = det.org || "Unknown";
-                loc = `${det.city}, ${det.country_name}`;
+                const det = await (await fetch(`https://ipapi.co/${ipSaatIni}/json/`)).json();
+                isp = det.org; loc = `${det.city}, ${det.country_name}`;
             } catch(e) {}
-            document.getElementById('loc-display').innerText = `📍 ${loc}`;
-            document.getElementById('isp-display').innerText = "🏢 ISP: " + isp;
+            document.getElementById('loc-display').innerText = "📍 " + loc;
+            document.getElementById('isp-display').innerText = "🏢 " + isp;
 
-            // 3. Kirim ke Sheets
-            const time = new Date().toLocaleString('id-ID');
-            await fetch(GOOGLE_SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                body: JSON.stringify({ time, ip: currentIP, isp, loc, proxy: "Check" })
-            });
+            await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ time: new Date().toLocaleString('id-ID'), ip: ipSaatIni, isp, loc, proxy: "Check" })});
 
-            // 4. Tarik Histori
             setTimeout(async () => {
-                const resHist = await fetch(GOOGLE_SCRIPT_URL);
-                masterData = await resHist.json();
-                renderTabel(masterData);
-            }, 2000);
-
-        } catch (err) {
-            document.getElementById('status-container').innerText = "Gagal menghubungkan ke database.";
-        }
+                masterData = await (await fetch(GOOGLE_SCRIPT_URL)).json();
+                filteredData = [...masterData];
+                renderTabel();
+            }, 1500);
+        } catch (e) { document.getElementById('status-container').innerText = "Koneksi Gagal."; }
     }
 
-    function renderTabel(data) {
-        // Hitung duplikat berdasarkan data master
-        const ipCounts = {};
-        masterData.forEach(item => {
-            const key = String(item.ip);
-            ipCounts[key] = (ipCounts[key] || 0) + 1;
-        });
-
-        // Update Header Utama
-        if (currentIP && ipCounts[String(currentIP)] > 1) {
-            document.getElementById('status-container').innerHTML = '<div class="status-box bg-red">⚠️ IP INI SUDAH PERNAH TERPAKAI!</div>';
-        } else if (currentIP) {
-            document.getElementById('status-container').innerHTML = '<div class="status-box bg-green">✅ IP FRESH / BARU</div>';
-        }
-
-        const tableBody = document.getElementById('log-table');
-        if (data.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px;">Data tidak ditemukan.</td></tr>';
-            return;
-        }
-
-        tableBody.innerHTML = data.map(item => {
-            const isDup = ipCounts[String(item.ip)] > 1;
-            const rowClass = isDup ? 'class="row-duplicate"' : '';
-            const label = isDup ? '<span class="badge-duplicate">DUPLIKAT</span>' : '';
-            
-            return `<tr ${rowClass}>
-                        <td>${item.time}</td>
-                        <td style="font-family:monospace; font-weight:bold; color:#fbbf24;">${item.ip} ${label}</td>
-                        <td>${item.isp}</td>
-                        <td>${item.loc}</td>
-                    </tr>`;
-        }).join('');
+    function renderTabel() {
+        const query = document.getElementById('search-input').value.toLowerCase();
         
-        document.getElementById('search-count').innerText = `Menampilkan ${data.length} baris data.`;
-    }
-
-    function filterData() {
-        const q = document.getElementById('search-input').value.toLowerCase();
-        
-        if (!q) {
-            renderTabel(masterData);
-            return;
-        }
-
-        const filtered = masterData.filter(item => {
-            const ip = String(item.ip || "").toLowerCase();
-            const isp = String(item.isp || "").toLowerCase();
-            const loc = String(item.loc || "").toLowerCase();
-            
-            // Cek duplikat untuk keyword "duplikat"
+        // Filter data berdasarkan search
+        filteredData = masterData.filter(item => {
             const isDup = masterData.filter(m => String(m.ip) === String(item.ip)).length > 1;
-            const dupText = isDup ? "duplikat" : "";
-
-            return ip.includes(q) || isp.includes(q) || loc.includes(q) || dupText.includes(q);
+            return String(item.ip).toLowerCase().includes(query) || 
+                   String(item.isp).toLowerCase().includes(query) || 
+                   String(item.loc).toLowerCase().includes(query) ||
+                   (isDup && "duplikat".includes(query));
         });
 
-        renderTabel(filtered);
+        // Hitung Pagination
+        const totalPages = Math.ceil(filteredData.length / rowsPerPage) || 1;
+        if (currentPage > totalPages) currentPage = totalPages;
+
+        const start = (currentPage - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
+        const pageData = filteredData.slice(start, end);
+
+        // Update UI Status Header
+        const allIPs = masterData.map(m => String(m.ip));
+        const currentCount = allIPs.filter(x => x === ipSaatIni).length;
+        document.getElementById('status-container').innerHTML = currentCount > 1 
+            ? '<div class="status-box bg-red">⚠️ IP INI SUDAH PERNAH TERPAKAI!</div>' 
+            : '<div class="status-box bg-green">✅ IP FRESH / BARU</div>';
+
+        // Render Baris
+        const tableBody = document.getElementById('log-table');
+        tableBody.innerHTML = pageData.map(item => {
+            const isDup = allIPs.filter(x => x === String(item.ip)).length > 1;
+            return `<tr class="${isDup ? 'row-duplicate' : ''}">
+                <td>${item.time}</td>
+                <td style="font-family:monospace; font-weight:bold; color:#fbbf24;">${item.ip} ${isDup ? '<span class="badge-duplicate">DUPLIKAT</span>' : ''}</td>
+                <td>${item.isp}</td>
+                <td>${item.loc}</td>
+            </tr>`;
+        }).join('');
+
+        // Update Controls
+        document.getElementById('page-label').innerText = `Page ${currentPage} of ${totalPages}`;
+        document.getElementById('prev-btn').disabled = currentPage === 1;
+        document.getElementById('next-btn').disabled = currentPage === totalPages;
     }
 
-    // Support tekan Enter di kolom pencarian
-    document.getElementById('search-input').addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') {
-            filterData();
-        }
-    });
+    function changePage(step) {
+        currentPage += step;
+        renderTabel();
+    }
+
+    function resetToFirstPage() {
+        currentPage = 1;
+        renderTabel();
+    }
+
+    function copyCurrentIP() {
+        navigator.clipboard.writeText(ipSaatIni);
+        alert("IP Berhasil disalin: " + ipSaatIni);
+    }
 
     init();
 </script>
