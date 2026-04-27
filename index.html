@@ -3,17 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IP Monitor Pro - Dual Shortcut</title>
+    <title>IP Monitor Pro</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; padding: 20px; margin: 0; }
         .container { max-width: 1000px; margin: auto; padding-bottom: 50px; }
         
-        /* NAVIGASI: TAMBAH/EDIT LINK DI SINI */
+        /* NAVIGASI ATAS */
         .nav-menu { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #334155; padding-bottom: 10px; overflow-x: auto; align-items: center; }
         .nav-link { padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; background: #1e293b; color: #94a3b8; text-decoration: none; white-space: nowrap; font-size: 13px; }
         .nav-link.active { background: #38bdf8; color: #0f172a; }
         .nav-link:hover:not(.active) { background: #334155; color: white; }
-        /* Warna Tombol Shortcut */
         .btn-blue { background: #4f46e5 !important; color: white !important; }
         .btn-purple { background: #7c3aed !important; color: white !important; }
 
@@ -34,6 +33,12 @@
         .copy-btn { background: #38bdf8; color: #0f172a; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
         .btn-action { background: #38bdf8; color: #0f172a; border: none; padding: 15px 25px; border-radius: 30px; cursor: pointer; font-weight: bold; }
 
+        /* PAGINATION STYLE */
+        .pagination { display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 20px; }
+        .btn-page { background: #334155; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-page:disabled { opacity: 0.3; cursor: not-allowed; }
+        .page-info { font-size: 0.9em; color: #94a3b8; }
+
         .page-content { display: none; }
         .page-content.active { display: block; animation: fadeIn 0.4s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -46,10 +51,8 @@
         <div class="nav-link active" onclick="openPage('ip-monitor', this)">Monitor</div>
         <div class="nav-link" onclick="openPage('speed-test', this)">Speedtest</div>
         <div class="nav-link" onclick="openPage('zip-search', this)">Kode Pos</div>
-        
         <span style="color: #334155; margin: 0 5px;">|</span>
-        
-        <a href="https://stake.com/ru" target="_blank" class="nav-link btn-blue">Stake RU ↗</a>
+        <a href="https://stake.com/ru" target="_blank" class="nav-link btn-blue">Stake ↗</a>
         <a href="https://stake1022.com/ru" target="_blank" class="nav-link btn-purple">Stake 1022 ↗</a>
     </div>
 
@@ -64,17 +67,18 @@
                 <span id="ip-display" class="ip-text">Mencari IP...</span>
                 <button class="copy-btn" onclick="copyText(document.getElementById('ip-display').innerText)">COPY IP</button>
             </div>
-            <div id="loc-display" style="color: #38bdf8; margin-top: 10px; font-weight: bold;">📍 Mencari Lokasi...</div>
-            <div id="isp-display" style="opacity: 0.8; margin-top: 4px;">🏢 Mencari ISP...</div>
+            <div id="loc-display" style="color: #38bdf8; margin-top: 10px; font-weight: bold;">📍 Mencari...</div>
+            <div id="isp-display" style="opacity: 0.8; margin-top: 4px;">🏢 Mencari...</div>
         </div>
 
         <div class="card">
             <h3 style="margin: 0 0 15px 0;">Histori Database</h3>
             <div class="controls-container">
-                <input type="text" id="search-input" placeholder="Cari IP..." oninput="renderTabel()" style="flex-grow: 1;">
-                <select id="rows-per-page" onchange="renderTabel()">
+                <input type="text" id="search-input" placeholder="Cari IP..." oninput="resetToFirstPage()" style="flex-grow: 1;">
+                <select id="rows-per-page" onchange="resetToFirstPage()">
                     <option value="10">10 Baris</option>
                     <option value="20">20 Baris</option>
+                    <option value="50">50 Baris</option>
                 </select>
             </div>
             <div style="overflow-x: auto;">
@@ -89,6 +93,11 @@
                     </thead>
                     <tbody id="log-table"></tbody>
                 </table>
+            </div>
+            <div class="pagination">
+                <button id="prev-btn" class="btn-page" onclick="changePage(-1)">Prev</button>
+                <span id="page-label" class="page-info">Page 1</span>
+                <button id="next-btn" class="btn-page" onclick="changePage(1)">Next</button>
             </div>
         </div>
     </div>
@@ -113,6 +122,8 @@
     const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby9ZLQZ33RUf3FU_wnAb1S0kgulHf18RQVNW2H2rjE31luMIzZE53JUZWGdxbgbNxGk/exec';
     let masterData = [];
     let ipSaatIni = "";
+    let currentPage = 1;
+    let rowsPerPage = 10;
 
     function openPage(pageId, element) {
         document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
@@ -127,14 +138,14 @@
         window.open(`https://www.google.com/search?q=${encodeURIComponent("kode pos " + val)}`, '_blank');
     }
 
+    function copyText(txt) { 
+        navigator.clipboard.writeText(txt).then(() => alert("Salin: " + txt)); 
+    }
+
     function playAlert(dup) {
         const msg = new SpeechSynthesisUtterance(dup ? 'Duplicate' : 'Fresh');
         msg.lang = 'en-US';
         window.speechSynthesis.speak(msg);
-    }
-
-    function copyText(txt) { 
-        navigator.clipboard.writeText(txt).then(() => alert("Salin: " + txt)); 
     }
 
     async function init() {
@@ -146,13 +157,11 @@
 
             const det = await (await fetch(`https://ipapi.co/${ipSaatIni}/json/`)).json();
             const lokasi = `${det.city}, ${det.country_name}`;
-            
             document.getElementById('loc-display').innerHTML = `📍 ${lokasi}`;
             document.getElementById('isp-display').innerText = "🏢 " + (det.org || 'Unknown');
 
             await fetch(GOOGLE_SCRIPT_URL, { 
-                method: 'POST', 
-                mode: 'no-cors', 
+                method: 'POST', mode: 'no-cors', 
                 body: JSON.stringify({ time: new Date().toLocaleString('id-ID'), ip: ipSaatIni, isp: det.org, loc: lokasi })
             });
 
@@ -166,28 +175,44 @@
 
     function renderTabel(sound = false) {
         const query = document.getElementById('search-input').value.toLowerCase();
-        const rows = parseInt(document.getElementById('rows-per-page').value);
+        rowsPerPage = parseInt(document.getElementById('rows-per-page').value);
+        
         const counts = {};
         masterData.forEach(item => { counts[item.ip] = (counts[item.ip] || 0) + 1; });
 
-        const filtered = masterData.filter(item => String(item.ip).includes(query)).slice(0, rows);
-        const isDup = (counts[ipSaatIni] || 0) > 1;
+        const filtered = masterData.filter(item => String(item.ip).includes(query));
+        const totalPages = Math.ceil(filtered.length / rowsPerPage) || 1;
+        const pageData = filtered.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
 
+        const isDup = (counts[ipSaatIni] || 0) > 1;
         document.getElementById('status-container').innerHTML = isDup 
             ? `<div class="status-box bg-red">⚠️ TERPAKAI (${counts[ipSaatIni]}x)</div>` 
             : '<div class="status-box bg-green">✅ FRESH</div>';
 
         if (sound) playAlert(isDup);
 
-        document.getElementById('log-table').innerHTML = filtered.map(item => {
+        document.getElementById('log-table').innerHTML = pageData.map(item => {
             const c = counts[item.ip] || 0;
             return `<tr class="${c > 1 ? 'row-duplicate' : ''}">
                 <td>${item.time}</td>
                 <td style="font-family:monospace; font-weight:bold; color:#fbbf24;">${item.ip} ${c > 1 ? `(${c}x)` : ''}</td>
-                <td>${item.isp}</td>
-                <td>${item.loc}</td>
+                <td>${item.isp}</td><td>${item.loc}</td>
             </tr>`;
         }).join('');
+
+        document.getElementById('page-label').innerText = `Page ${currentPage} of ${totalPages}`;
+        document.getElementById('prev-btn').disabled = currentPage === 1;
+        document.getElementById('next-btn').disabled = currentPage === totalPages;
+    }
+
+    function changePage(step) {
+        currentPage += step;
+        renderTabel();
+    }
+
+    function resetToFirstPage() {
+        currentPage = 1;
+        renderTabel();
     }
 
     init();
