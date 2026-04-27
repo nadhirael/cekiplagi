@@ -3,38 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IP Monitor - Audio Alert Pro</title>
+    <title>IP Monitor & ZipCode Pro</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; padding: 20px; margin: 0; }
         .container { max-width: 1000px; margin: auto; padding-bottom: 50px; }
-        .nav-menu { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #334155; padding-bottom: 10px; }
-        .nav-link { padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; background: #1e293b; color: #94a3b8; }
+        
+        /* MENU NAVIGASI */
+        .nav-menu { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #334155; padding-bottom: 10px; overflow-x: auto; }
+        .nav-link { padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; background: #1e293b; color: #94a3b8; white-space: nowrap; }
         .nav-link.active { background: #38bdf8; color: #0f172a; }
         .nav-link:hover:not(.active) { background: #334155; color: white; }
+
         .card { background: #1e293b; padding: 25px; border-radius: 12px; border: 1px solid #334155; margin-bottom: 20px; box-shadow: 0 10px 15px rgba(0,0,0,0.2); }
         .ip-text { font-size: 32px; color: #fbbf24; font-weight: bold; font-family: monospace; }
         .status-box { padding: 12px; border-radius: 8px; font-weight: bold; text-align: center; margin-bottom: 15px; }
         .bg-red { background: #7f1d1d; color: #fecaca; border: 1px solid #dc2626; }
         .bg-green { background: #064e3b; color: #a7f3d0; border: 1px solid #059669; }
+        
         .controls-container { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; align-items: center; }
-        #search-input { flex-grow: 1; padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; font-size: 16px; }
-        .rows-select { padding: 11px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; }
+        input, select { padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; font-size: 14px; }
+        #search-input { flex-grow: 1; }
+
         table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
         th, td { padding: 12px; border-bottom: 1px solid #334155; text-align: left; }
         th { background: #0f172a; color: #94a3b8; }
         .row-duplicate { background-color: #450a0a !important; color: #fecaca !important; }
         .badge-duplicate { background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.75em; margin-left: 8px; font-weight: bold; }
+        
         .pagination { display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 20px; }
         .btn-page { background: #334155; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
         .btn-page:disabled { opacity: 0.3; cursor: not-allowed; }
+        
         .copy-btn { background: #38bdf8; color: #0f172a; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-left: 10px; }
-        .btn-speed { display: inline-block; background: #38bdf8; color: #0f172a; padding: 15px 30px; border-radius: 8px; font-weight: bold; text-decoration: none; transition: 0.3s; border: none; cursor: pointer; }
+        .btn-action { background: #38bdf8; color: #0f172a; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+
         .page-content { display: none; }
         .page-content.active { display: block; animation: fadeIn 0.4s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        #speedtest-frame-container { margin-top: 20px; display: none; }
         
-        /* TOGGLE SUARA */
         .sound-toggle { font-size: 0.8em; color: #94a3b8; display: flex; align-items: center; gap: 5px; cursor: pointer; }
     </style>
 </head>
@@ -44,10 +50,9 @@
     <div class="nav-menu">
         <div class="nav-link active" onclick="openPage('ip-monitor', this)">IP Monitor</div>
         <div class="nav-link" onclick="openPage('speed-test', this)">Speedtest</div>
+        <div class="nav-link" onclick="openPage('zip-code', this)">Cari Kode Pos</div>
         <div style="margin-left: auto; display: flex; align-items: center;">
-            <label class="sound-toggle">
-                <input type="checkbox" id="sound-active" checked> 🔊 Suara Aktif
-            </label>
+            <label class="sound-toggle"><input type="checkbox" id="sound-active" checked> 🔊 Suara</label>
         </div>
     </div>
 
@@ -57,7 +62,7 @@
             <div id="status-container">Sinkronisasi...</div>
             <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 10px;">
                 <span id="ip-display" class="ip-text">Mencari IP...</span>
-                <button class="copy-btn" onclick="copyCurrentIP()">COPY IP</button>
+                <button class="copy-btn" onclick="copyText(document.getElementById('ip-display').innerText)">COPY IP</button>
             </div>
             <div id="loc-display" style="color: #38bdf8; margin-top: 10px; font-weight: bold;"></div>
             <div id="isp-display" style="opacity: 0.8; margin-top: 4px;"></div>
@@ -66,20 +71,19 @@
         <div class="card">
             <div style="display: flex; justify-content: space-between; margin-bottom: 15px; align-items: center;">
                 <h3 style="margin:0;">Histori & Shortlist</h3>
-                <button onclick="location.reload()" style="background:#334155; border:none; color:white; padding:6px 15px; cursor:pointer; border-radius:6px; font-size: 0.8em;">Refresh Data</button>
+                <button onclick="location.reload()" style="background:#334155; border:none; color:white; padding:6px 15px; cursor:pointer; border-radius:6px; font-size: 0.8em;">Refresh</button>
             </div>
             <div class="controls-container">
-                <input type="text" id="search-input" placeholder="Cari IP, Kota, atau ketik 'duplikat'..." oninput="resetToFirstPage()">
-                <select id="rows-per-page" class="rows-select" onchange="updateRowsPerPage()">
+                <input type="text" id="search-input" placeholder="Cari IP atau 'duplikat'..." oninput="resetToFirstPage()">
+                <select id="rows-per-page" onchange="updateRowsPerPage()">
                     <option value="10">10 Baris</option>
                     <option value="20">20 Baris</option>
-                    <option value="50">50 Baris</option>
                 </select>
             </div>
             <div style="overflow-x: auto;">
                 <table>
                     <thead><tr><th>Waktu</th><th>IP Address</th><th>ISP</th><th>Lokasi</th></tr></thead>
-                    <tbody id="log-table"><tr><td colspan="4" style="text-align:center; padding:30px;">Memuat histori...</td></tr></tbody>
+                    <tbody id="log-table"></tbody>
                 </table>
             </div>
             <div class="pagination">
@@ -92,16 +96,31 @@
 
     <div id="speed-test" class="page-content">
         <div class="card" style="text-align: center; padding: 40px;">
-            <h3>Cek Kecepatan Internet</h3>
-            <div style="display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;">
-                <button class="btn-speed" onclick="startSpeedtest()">MULAI TEST (FAST.COM)</button>
-                <a href="https://www.speedtest.net" target="_blank" class="btn-speed" style="background: #334155; color: white;">OPEN SPEEDTEST.NET ↗</a>
+            <h3>Test Kecepatan</h3>
+            <button class="btn-action" onclick="startSpeedtest()">MULAI FAST.COM</button>
+            <div id="speedtest-frame-container" style="display:none; margin-top:20px;">
+                <iframe id="speedtest-iframe" src="" width="100%" height="350px" frameborder="0" style="border-radius:12px; border:4px solid #38bdf8; background:white;"></iframe>
+                <button onclick="stopSpeedtest()" style="margin-top:10px; background:#7f1d1d; color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer;">Stop</button>
             </div>
-            <div id="speedtest-frame-container">
-                <div style="background: white; border-radius: 12px; overflow: hidden; height: 350px; border: 4px solid #38bdf8; margin-top:20px;">
-                    <iframe id="speedtest-iframe" src="" width="100%" height="350px" frameborder="0"></iframe>
-                </div>
-                <button onclick="stopSpeedtest()" style="margin-top: 15px; background: #7f1d1d; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer;">Hentikan / Reset</button>
+        </div>
+    </div>
+
+    <div id="zip-code" class="page-content">
+        <div class="card">
+            <h3>Cari Kode Pos Indonesia</h3>
+            <div class="controls-container">
+                <input type="text" id="zip-kec" placeholder="Nama Kecamatan..." style="flex: 1;">
+                <input type="text" id="zip-kab" placeholder="Nama Kabupaten/Kota..." style="flex: 1;">
+                <button class="btn-action" onclick="searchZipCode()">CARI</button>
+            </div>
+            <div id="zip-status" style="margin-bottom: 10px; font-size: 0.9em; color: #38bdf8;"></div>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead><tr><th>Kelurahan</th><th>Kecamatan</th><th>Kabupaten</th><th>Kode Pos</th><th>Aksi</th></tr></thead>
+                    <tbody id="zip-table">
+                        <tr><td colspan="5" style="text-align:center; padding:20px;">Masukkan data untuk mencari...</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -114,22 +133,6 @@
     let rowsPerPage = 10;
     let ipSaatIni = "";
 
-    // FUNGSI SUARA (RINGAN)
-    function playAlert(type) {
-        if (!document.getElementById('sound-active').checked) return;
-        const msg = new SpeechSynthesisUtterance();
-        msg.lang = 'en-US';
-        msg.rate = 1.2;
-        if (type === 'fresh') {
-            msg.text = 'Fresh';
-            msg.pitch = 1.5;
-        } else {
-            msg.text = 'Duplicate';
-            msg.pitch = 0.5;
-        }
-        window.speechSynthesis.speak(msg);
-    }
-
     function openPage(pageId, element) {
         document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
         document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
@@ -138,15 +141,55 @@
         if (pageId !== 'speed-test') stopSpeedtest();
     }
 
-    function startSpeedtest() {
-        document.getElementById('speedtest-frame-container').style.display = 'block';
-        document.getElementById('speedtest-iframe').src = "https://fast.com";
+    // FUNGSI CARI KODE POS
+    async function searchZipCode() {
+        const kec = document.getElementById('zip-kec').value;
+        const kab = document.getElementById('zip-kab').value;
+        const tableBody = document.getElementById('zip-table');
+        const status = document.getElementById('zip-status');
+
+        if (!kec || !kab) { alert("Isi Kecamatan dan Kabupaten!"); return; }
+
+        status.innerText = "Mencari data...";
+        tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">Sedang mencari...</td></tr>';
+
+        try {
+            // Menggunakan API publik kodepos
+            const response = await fetch(`https://kodepos.vercel.app/search?q=${kec} ${kab}`);
+            const resData = await response.json();
+
+            if (resData.status && resData.data.length > 0) {
+                status.innerText = `Ditemukan ${resData.data.length} lokasi.`;
+                tableBody.innerHTML = resData.data.map(item => `
+                    <tr>
+                        <td>${item.urban}</td>
+                        <td>${item.subdistrict}</td>
+                        <td>${item.city}</td>
+                        <td style="font-weight:bold; color:#fbbf24;">${item.postalcode}</td>
+                        <td><button class="copy-btn" onclick="copyText('${item.postalcode}')">COPY</button></td>
+                    </tr>
+                `).join('');
+            } else {
+                status.innerText = "Data tidak ditemukan.";
+                tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">Tidak ada hasil. Periksa ejaan nama wilayah.</td></tr>';
+            }
+        } catch (e) {
+            status.innerText = "Gagal mengambil data.";
+            tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">Terjadi kesalahan sistem.</td></tr>';
+        }
     }
 
-    function stopSpeedtest() {
-        document.getElementById('speedtest-frame-container').style.display = 'none';
-        document.getElementById('speedtest-iframe').src = "";
+    function playAlert(type) {
+        if (!document.getElementById('sound-active').checked) return;
+        const msg = new SpeechSynthesisUtterance();
+        msg.lang = 'en-US';
+        msg.text = type === 'fresh' ? 'Fresh' : 'Duplicate';
+        window.speechSynthesis.speak(msg);
     }
+
+    function startSpeedtest() { document.getElementById('speedtest-frame-container').style.display='block'; document.getElementById('speedtest-iframe').src="https://fast.com"; }
+    function stopSpeedtest() { document.getElementById('speedtest-frame-container').style.display='none'; document.getElementById('speedtest-iframe').src=""; }
+    function copyText(txt) { navigator.clipboard.writeText(txt).then(() => alert("Tersalin: " + txt)); }
 
     async function init() {
         try {
@@ -158,8 +201,7 @@
             let isp = "Unknown", loc = "-";
             try {
                 const det = await (await fetch(`https://ipapi.co/${ipSaatIni}/json/`)).json();
-                isp = det.org || "Unknown"; 
-                loc = `${det.city || ''}, ${det.country_name || ''}`;
+                isp = det.org || "Unknown"; loc = `${det.city || ''}, ${det.country_name || ''}`;
             } catch(e) {}
             document.getElementById('loc-display').innerText = "📍 " + loc;
             document.getElementById('isp-display').innerText = "🏢 " + isp;
@@ -167,11 +209,10 @@
             await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ time: new Date().toLocaleString('id-ID'), ip: ipSaatIni, isp, loc, proxy: "Check" })});
 
             setTimeout(async () => {
-                const res = await fetch(GOOGLE_SCRIPT_URL);
-                masterData = await res.json();
-                renderTabel(true); // Kirim true untuk bunyi pas pertama load
+                masterData = await (await fetch(GOOGLE_SCRIPT_URL)).json();
+                renderTabel(true);
             }, 1500);
-        } catch (e) { document.getElementById('status-container').innerText = "Koneksi Gagal."; }
+        } catch (e) {}
     }
 
     function renderTabel(shouldPlaySound = false) {
@@ -181,36 +222,26 @@
 
         let filteredData = masterData.filter(item => {
             const isDup = ipCounts[String(item.ip)] > 1;
-            return String(item.ip).toLowerCase().includes(query) || 
-                   String(item.isp).toLowerCase().includes(query) || 
-                   String(item.loc).toLowerCase().includes(query) ||
-                   (isDup && "duplikat".includes(query));
+            return String(item.ip).toLowerCase().includes(query) || (isDup && "duplikat".includes(query));
         });
 
         const totalPages = Math.ceil(filteredData.length / rowsPerPage) || 1;
-        const start = (currentPage - 1) * rowsPerPage;
-        const pageData = filteredData.slice(start, start + rowsPerPage);
+        const pageData = filteredData.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
 
         const currentCount = ipCounts[String(ipSaatIni)] || 0;
-        const isCurrentlyDup = currentCount > 1;
-        
-        document.getElementById('status-container').innerHTML = isCurrentlyDup 
-            ? `<div class="status-box bg-red">⚠️ IP INI SUDAH PERNAH TERPAKAI (${currentCount}x)!</div>` 
-            : '<div class="status-box bg-green">✅ IP FRESH / BARU</div>';
+        document.getElementById('status-container').innerHTML = currentCount > 1 
+            ? `<div class="status-box bg-red">⚠️ TERPAKAI (${currentCount}x)!</div>` 
+            : '<div class="status-box bg-green">✅ FRESH / BARU</div>';
 
-        // JALANKAN SUARA
-        if (shouldPlaySound && ipSaatIni) {
-            playAlert(isCurrentlyDup ? 'duplicate' : 'fresh');
-        }
+        if (shouldPlaySound && ipSaatIni) playAlert(currentCount > 1 ? 'dup' : 'fresh');
 
         document.getElementById('log-table').innerHTML = pageData.map(item => {
             const count = ipCounts[String(item.ip)] || 0;
             const isDup = count > 1;
             return `<tr class="${isDup ? 'row-duplicate' : ''}">
                 <td>${item.time}</td>
-                <td style="font-family:monospace; font-weight:bold; color:#fbbf24;">${item.ip} ${isDup ? `<span class="badge-duplicate">DUPLIKAT (${count}x)</span>` : ''}</td>
-                <td>${item.isp}</td>
-                <td>${item.loc}</td>
+                <td style="font-family:monospace; font-weight:bold; color:#fbbf24;">${item.ip} ${isDup ? `<span class="badge-duplicate">(${count}x)</span>` : ''}</td>
+                <td>${item.isp}</td><td>${item.loc}</td>
             </tr>`;
         }).join('');
 
@@ -222,7 +253,6 @@
     function updateRowsPerPage() { rowsPerPage = parseInt(document.getElementById('rows-per-page').value); currentPage = 1; renderTabel(); }
     function changePage(step) { currentPage += step; renderTabel(); }
     function resetToFirstPage() { currentPage = 1; renderTabel(); }
-    function copyCurrentIP() { navigator.clipboard.writeText(ipSaatIni).then(() => alert("IP Disalin!")); }
 
     init();
 </script>
