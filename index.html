@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IP Monitor Pro - Date & Time</title>
+    <title>IP Monitor Pro - Ping Edition</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; padding: 20px; margin: 0; }
         .container { max-width: 1000px; margin: auto; padding-bottom: 50px; }
         
+        /* NAVIGASI */
         .nav-menu { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #334155; padding-bottom: 10px; overflow-x: auto; align-items: center; }
         .nav-link { padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; background: #1e293b; color: #94a3b8; text-decoration: none; white-space: nowrap; font-size: 13px; }
         .nav-link.active { background: #38bdf8; color: #0f172a; }
@@ -17,12 +18,18 @@
         .card { background: #1e293b; padding: 25px; border-radius: 12px; border: 1px solid #334155; margin-bottom: 20px; }
         .ip-text { font-size: 32px; color: #fbbf24; font-weight: bold; font-family: monospace; }
         
-        /* STYLE JAM & TANGGAL */
+        /* STYLE JAM & PING */
         .clock-container { display: flex; gap: 15px; margin-top: 15px; padding-top: 15px; border-top: 1px solid #334155; }
         .clock-box { flex: 1; background: #0f172a; padding: 12px; border-radius: 10px; text-align: center; border: 1px solid #1e293b; }
         .clock-label { font-size: 10px; color: #94a3b8; text-transform: uppercase; margin-bottom: 5px; display: block; letter-spacing: 1px; }
         .clock-time { font-size: 22px; font-weight: bold; color: #38bdf8; font-family: monospace; line-height: 1.2; }
         .clock-date { font-size: 12px; color: #fbbf24; font-weight: bold; margin-top: 4px; display: block; opacity: 0.9; }
+
+        /* PING INDICATOR */
+        .ping-box { margin-top: 15px; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 14px; background: #0f172a; border: 1px solid #334155; }
+        .ping-low { color: #10b981; }      /* Hijau */
+        .ping-mid { color: #f59e0b; }      /* Kuning */
+        .ping-high { color: #ef4444; }     /* Merah */
 
         .status-box { padding: 12px; border-radius: 8px; font-weight: bold; text-align: center; margin-bottom: 15px; }
         .bg-red { background: #7f1d1d; color: #fecaca; border: 1px solid #dc2626; border-left: 10px solid #ef4444; }
@@ -65,6 +72,10 @@
             <div id="loc-display" style="color: #38bdf8; margin-top: 10px; font-weight: bold;">📍 Mendeteksi...</div>
             <div id="isp-display" style="opacity: 0.8; margin-top: 4px;">🏢 ISP: --</div>
 
+            <div class="ping-box" id="ping-display">
+                LATENCY: <span class="ping-wait">Checking...</span>
+            </div>
+
             <div class="clock-container">
                 <div class="clock-box">
                     <span class="clock-label">INDONESIA (WIB)</span>
@@ -105,7 +116,6 @@
     <div id="speed-test" class="page-content">
         <div class="card" style="text-align: center;"><iframe src="https://fast.com" width="100%" height="450px" frameborder="0" style="background:white; border-radius:12px;"></iframe></div>
     </div>
-
     <div id="zip-search" class="page-content">
         <div class="card" style="text-align: center; padding: 50px 20px;">
             <div style="max-width: 500px; margin: auto;">
@@ -124,25 +134,36 @@
     let currentPage = 1;
     let rowsPerPage = 10;
 
+    // FUNGSI CEK PING
+    async function checkPing() {
+        const start = Date.now();
+        try {
+            await fetch('https://1.1.1.1/favicon.ico', { mode: 'no-cors', cache: 'no-cache' });
+            const ping = Date.now() - start;
+            const display = document.getElementById('ping-display');
+            let colorClass = 'ping-high';
+            
+            if (ping < 150) colorClass = 'ping-low';
+            else if (ping < 400) colorClass = 'ping-mid';
+
+            display.innerHTML = `LATENCY: <span class="${colorClass}">${ping} ms</span>`;
+        } catch (e) {
+            document.getElementById('ping-display').innerHTML = `LATENCY: <span class="ping-high">OFFLINE / ERROR</span>`;
+        }
+    }
+    // Cek ping setiap 5 detik biar update terus
+    setInterval(checkPing, 5000);
+
     function updateClocks() {
         const now = new Date();
-        
-        // Formatter Jam
         const timeFmt = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
-        // Formatter Tanggal
         const dateFmt = { day: '2-digit', month: '2-digit', year: 'numeric' };
-
-        // Indonesia (WIB)
         document.getElementById('clock-indo').innerText = new Intl.DateTimeFormat('en-GB', { ...timeFmt, timeZone: 'Asia/Jakarta' }).format(now);
         document.getElementById('date-indo').innerText = new Intl.DateTimeFormat('en-GB', { ...dateFmt, timeZone: 'Asia/Jakarta' }).format(now).replace(/\//g, '-');
-
-        // Lokasi IP
         try {
             document.getElementById('clock-ip').innerText = new Intl.DateTimeFormat('en-GB', { ...timeFmt, timeZone: userTimeZone }).format(now);
             document.getElementById('date-ip').innerText = new Intl.DateTimeFormat('en-GB', { ...dateFmt, timeZone: userTimeZone }).format(now).replace(/\//g, '-');
-        } catch(e) {
-            userTimeZone = "UTC";
-        }
+        } catch(e) { userTimeZone = "UTC"; }
     }
     setInterval(updateClocks, 1000);
 
@@ -167,6 +188,7 @@
     }
 
     async function init() {
+        checkPing(); // Jalankan ping pertama kali
         try {
             const resIP = await fetch('https://api.ipify.org?format=json');
             const dataIP = await resIP.json();
@@ -180,18 +202,16 @@
             document.getElementById('isp-display').innerText = "🏢 ISP: " + (det.org || '--');
             document.getElementById('label-ip-time').innerText = `WAKTU (${det.city})`;
 
-            // POST Ke Sheets
             await fetch(GOOGLE_SCRIPT_URL, { 
                 method: 'POST', mode: 'no-cors', 
                 body: JSON.stringify({ time: new Date().toLocaleString('id-ID'), ip: ipSaatIni, isp: det.org, loc: lokasi })
             });
 
-            // Tarik Histori
             const response = await fetch(GOOGLE_SCRIPT_URL);
             masterData = await response.json();
             renderTabel(true);
         } catch (e) {
-            document.getElementById('status-container').innerHTML = `<div class="status-box bg-wait">ERROR KONEKSI DATABASE</div>`;
+            document.getElementById('status-container').innerHTML = `<div class="status-box bg-red">ERROR DATABASE</div>`;
         }
     }
 
