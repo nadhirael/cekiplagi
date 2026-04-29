@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IP Monitor Pro - Ping Edition</title>
+    <title>IP Monitor Pro - UA Tracker v2</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; padding: 20px; margin: 0; }
-        .container { max-width: 1000px; margin: auto; padding-bottom: 50px; }
+        .container { max-width: 1100px; margin: auto; padding-bottom: 50px; }
         
-        /* NAVIGASI */
         .nav-menu { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #334155; padding-bottom: 10px; overflow-x: auto; align-items: center; }
         .nav-link { padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; background: #1e293b; color: #94a3b8; text-decoration: none; white-space: nowrap; font-size: 13px; }
         .nav-link.active { background: #38bdf8; color: #0f172a; }
@@ -18,28 +17,25 @@
         .card { background: #1e293b; padding: 25px; border-radius: 12px; border: 1px solid #334155; margin-bottom: 20px; }
         .ip-text { font-size: 32px; color: #fbbf24; font-weight: bold; font-family: monospace; }
         
-        /* STYLE JAM & PING */
         .clock-container { display: flex; gap: 15px; margin-top: 15px; padding-top: 15px; border-top: 1px solid #334155; }
         .clock-box { flex: 1; background: #0f172a; padding: 12px; border-radius: 10px; text-align: center; border: 1px solid #1e293b; }
-        .clock-label { font-size: 10px; color: #94a3b8; text-transform: uppercase; margin-bottom: 5px; display: block; letter-spacing: 1px; }
-        .clock-time { font-size: 22px; font-weight: bold; color: #38bdf8; font-family: monospace; line-height: 1.2; }
-        .clock-date { font-size: 12px; color: #fbbf24; font-weight: bold; margin-top: 4px; display: block; opacity: 0.9; }
+        .clock-label { font-size: 10px; color: #94a3b8; text-transform: uppercase; margin-bottom: 5px; display: block; }
+        .clock-time { font-size: 22px; font-weight: bold; color: #38bdf8; font-family: monospace; }
+        .clock-date { font-size: 11px; color: #fbbf24; margin-top: 4px; display: block; }
 
-        /* PING INDICATOR */
-        .ping-box { margin-top: 15px; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 14px; background: #0f172a; border: 1px solid #334155; }
-        .ping-low { color: #10b981; }      /* Hijau */
-        .ping-mid { color: #f59e0b; }      /* Kuning */
-        .ping-high { color: #ef4444; }     /* Merah */
-
+        .ping-box { margin: 15px 0; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 13px; background: #0f172a; border: 1px solid #334155; }
+        
         .status-box { padding: 12px; border-radius: 8px; font-weight: bold; text-align: center; margin-bottom: 15px; }
-        .bg-red { background: #7f1d1d; color: #fecaca; border: 1px solid #dc2626; border-left: 10px solid #ef4444; }
-        .bg-green { background: #064e3b; color: #a7f3d0; border: 1px solid #059669; border-left: 10px solid #10b981; }
+        .bg-red { background: #7f1d1d; color: #fecaca; border-left: 10px solid #ef4444; }
+        .bg-green { background: #064e3b; color: #a7f3d0; border-left: 10px solid #10b981; }
         .bg-wait { background: #334155; color: #94a3b8; }
         
-        input, select { padding: 10px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.85em; margin-top: 10px; }
-        th, td { padding: 12px; border-bottom: 1px solid #334155; text-align: left; }
-        .row-duplicate { background-color: #450a0a !important; color: #fecaca !important; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.8em; }
+        th, td { padding: 10px; border-bottom: 1px solid #334155; text-align: left; vertical-align: top; }
+        .ua-text { font-size: 10px; opacity: 0.7; display: block; max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+        .ua-text:hover { white-space: normal; overflow: visible; background: #0f172a; position: absolute; max-width: 400px; z-index: 10; padding: 5px; border-radius: 4px; border: 1px solid #38bdf8; }
+
+        .row-duplicate { background-color: #450a0a !important; }
         .copy-btn { background: #38bdf8; color: #0f172a; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
         .btn-page { background: #334155; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
         .page-content { display: none; }
@@ -69,30 +65,21 @@
                 <span id="ip-display" class="ip-text">...</span>
                 <button class="copy-btn" onclick="copyText(document.getElementById('ip-display').innerText)">COPY IP</button>
             </div>
-            <div id="loc-display" style="color: #38bdf8; margin-top: 10px; font-weight: bold;">📍 Mendeteksi...</div>
-            <div id="isp-display" style="opacity: 0.8; margin-top: 4px;">🏢 ISP: --</div>
+            <div id="loc-display" style="color: #38bdf8; margin-top: 10px; font-weight: bold;">📍 Mendeteksi Lokasi...</div>
+            <div id="isp-display" style="opacity: 0.8; margin-top: 4px; font-size: 14px;">🏢 ISP: --</div>
+            <div id="ua-display" style="opacity: 0.6; margin-top: 4px; font-size: 11px; font-family: monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">UA: --</div>
 
-            <div class="ping-box" id="ping-display">
-                LATENCY: <span class="ping-wait">Checking...</span>
-            </div>
+            <div class="ping-box" id="ping-display">LATENCY: <span>Checking...</span></div>
 
             <div class="clock-container">
-                <div class="clock-box">
-                    <span class="clock-label">INDONESIA (WIB)</span>
-                    <div id="clock-indo" class="clock-time">00:00:00</div>
-                    <div id="date-indo" class="clock-date">--/--/----</div>
-                </div>
-                <div class="clock-box">
-                    <span class="clock-label" id="label-ip-time">WAKTU LOKAL</span>
-                    <div id="clock-ip" class="clock-time">00:00:00</div>
-                    <div id="date-ip" class="clock-date">--/--/----</div>
-                </div>
+                <div class="clock-box"><span class="clock-label">WIB</span><div id="clock-indo" class="clock-time">00:00:00</div><div id="date-indo" class="clock-date">--/--/----</div></div>
+                <div class="clock-box"><span class="clock-label" id="label-ip-time">LOKAL</span><div id="clock-ip" class="clock-time">00:00:00</div><div id="date-ip" class="clock-date">--/--/----</div></div>
             </div>
         </div>
 
         <div class="card">
             <h3 style="margin: 0 0 15px 0;">Histori Database</h3>
-            <div style="display:flex; gap:10px; margin-bottom:15px; align-items:center;">
+            <div style="display:flex; gap:10px; margin-bottom:15px;">
                 <input type="text" id="search-input" placeholder="Cari IP..." oninput="resetToFirstPage()" style="flex-grow: 1;">
                 <select id="rows-per-page" onchange="resetToFirstPage()">
                     <option value="10">10 Baris</option>
@@ -101,8 +88,16 @@
             </div>
             <div style="overflow-x: auto;">
                 <table>
-                    <thead><tr><th>Waktu</th><th>IP Address</th><th>ISP</th><th>Lokasi</th></tr></thead>
-                    <tbody id="log-table"><tr><td colspan="4" style="text-align:center; padding:20px;">Memuat data...</td></tr></tbody>
+                    <thead>
+                        <tr>
+                            <th>Waktu</th>
+                            <th>IP Address</th>
+                            <th>ISP</th>
+                            <th>Lokasi</th>
+                            <th>User Agent</th>
+                        </tr>
+                    </thead>
+                    <tbody id="log-table"><tr><td colspan="5" style="text-align:center; padding:20px;">Memuat data...</td></tr></tbody>
                 </table>
             </div>
             <div style="display:flex; justify-content:center; align-items:center; gap:15px; margin-top:20px;">
@@ -119,50 +114,45 @@
     <div id="zip-search" class="page-content">
         <div class="card" style="text-align: center; padding: 50px 20px;">
             <div style="max-width: 500px; margin: auto;">
-                <input type="text" id="single-query" placeholder="Ketik Wilayah..." style="width: 100%; border-radius: 30px; padding: 18px; margin-bottom: 20px; text-align: center; border: 1px solid #334155;">
-                <button onclick="searchZip()" style="background:#38bdf8; color:#0f172a; padding:15px 35px; border-radius:30px; border:none; font-weight:bold; cursor:pointer;">CARI KODE POS</button>
+                <input type="text" id="single-query" placeholder="Ketik Wilayah..." style="width: 100%; border-radius: 30px; padding: 15px; margin-bottom: 20px; text-align: center; border: 1px solid #334155;">
+                <button onclick="searchZip()" style="background:#38bdf8; color:#0f172a; padding:15px 30px; border-radius:30px; border:none; font-weight:bold; cursor:pointer;">CARI KODE POS</button>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby9ZLQZ33RUf3FU_wnAb1S0kgulHf18RQVNW2H2rjE31luMIzZE53JUZWGdxbgbNxGk/exec';
+    // URL SCRIPT BARU KAMU
+    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxYRAZarHOHbp-S9hR_yj5lxXkRKk3ZiP5rO_Wm5uKlLur6rvljGkNd59AkQUfc6ZbA/exec';
+    
     let masterData = [];
     let ipSaatIni = "";
     let userTimeZone = "Asia/Jakarta";
     let currentPage = 1;
     let rowsPerPage = 10;
+    const currentUA = navigator.userAgent;
 
-    // FUNGSI CEK PING
     async function checkPing() {
         const start = Date.now();
         try {
             await fetch('https://1.1.1.1/favicon.ico', { mode: 'no-cors', cache: 'no-cache' });
             const ping = Date.now() - start;
             const display = document.getElementById('ping-display');
-            let colorClass = 'ping-high';
-            
-            if (ping < 150) colorClass = 'ping-low';
-            else if (ping < 400) colorClass = 'ping-mid';
-
-            display.innerHTML = `LATENCY: <span class="${colorClass}">${ping} ms</span>`;
-        } catch (e) {
-            document.getElementById('ping-display').innerHTML = `LATENCY: <span class="ping-high">OFFLINE / ERROR</span>`;
-        }
+            let color = ping < 150 ? '#10b981' : (ping < 400 ? '#f59e0b' : '#ef4444');
+            display.innerHTML = `LATENCY: <span style="color:${color}">${ping} ms</span>`;
+        } catch (e) { document.getElementById('ping-display').innerHTML = `LATENCY: <span style="color:#ef4444">ERROR</span>`; }
     }
-    // Cek ping setiap 5 detik biar update terus
     setInterval(checkPing, 5000);
 
     function updateClocks() {
         const now = new Date();
         const timeFmt = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
         const dateFmt = { day: '2-digit', month: '2-digit', year: 'numeric' };
-        document.getElementById('clock-indo').innerText = new Intl.DateTimeFormat('en-GB', { ...timeFmt, timeZone: 'Asia/Jakarta' }).format(now);
-        document.getElementById('date-indo').innerText = new Intl.DateTimeFormat('en-GB', { ...dateFmt, timeZone: 'Asia/Jakarta' }).format(now).replace(/\//g, '-');
+        document.getElementById('clock-indo').innerText = new Intl.DateTimeFormat('id-ID', { ...timeFmt, timeZone: 'Asia/Jakarta' }).format(now);
+        document.getElementById('date-indo').innerText = new Intl.DateTimeFormat('id-ID', { ...dateFmt, timeZone: 'Asia/Jakarta' }).format(now).replace(/\//g, '-');
         try {
-            document.getElementById('clock-ip').innerText = new Intl.DateTimeFormat('en-GB', { ...timeFmt, timeZone: userTimeZone }).format(now);
-            document.getElementById('date-ip').innerText = new Intl.DateTimeFormat('en-GB', { ...dateFmt, timeZone: userTimeZone }).format(now).replace(/\//g, '-');
+            document.getElementById('clock-ip').innerText = new Intl.DateTimeFormat('id-ID', { ...timeFmt, timeZone: userTimeZone }).format(now);
+            document.getElementById('date-ip').innerText = new Intl.DateTimeFormat('id-ID', { ...dateFmt, timeZone: userTimeZone }).format(now).replace(/\//g, '-');
         } catch(e) { userTimeZone = "UTC"; }
     }
     setInterval(updateClocks, 1000);
@@ -181,14 +171,9 @@
 
     function copyText(txt) { navigator.clipboard.writeText(txt).then(() => alert("Salin: " + txt)); }
 
-    function playAlert(dup) {
-        const msg = new SpeechSynthesisUtterance(dup ? 'Duplicate' : 'Fresh');
-        msg.lang = 'en-US';
-        window.speechSynthesis.speak(msg);
-    }
-
     async function init() {
-        checkPing(); // Jalankan ping pertama kali
+        checkPing();
+        document.getElementById('ua-display').innerText = "UA: " + currentUA;
         try {
             const resIP = await fetch('https://api.ipify.org?format=json');
             const dataIP = await resIP.json();
@@ -202,20 +187,26 @@
             document.getElementById('isp-display').innerText = "🏢 ISP: " + (det.org || '--');
             document.getElementById('label-ip-time').innerText = `WAKTU (${det.city})`;
 
+            // SIMPAN DATA KE SHEETS (IP + ISP + LOKASI + UA)
             await fetch(GOOGLE_SCRIPT_URL, { 
                 method: 'POST', mode: 'no-cors', 
-                body: JSON.stringify({ time: new Date().toLocaleString('id-ID'), ip: ipSaatIni, isp: det.org, loc: lokasi })
+                body: JSON.stringify({ 
+                    time: new Date().toLocaleString('id-ID'), 
+                    ip: ipSaatIni, 
+                    isp: det.org, 
+                    loc: lokasi,
+                    ua: currentUA 
+                })
             });
 
+            // TARIK HISTORI
             const response = await fetch(GOOGLE_SCRIPT_URL);
             masterData = await response.json();
-            renderTabel(true);
-        } catch (e) {
-            document.getElementById('status-container').innerHTML = `<div class="status-box bg-red">ERROR DATABASE</div>`;
-        }
+            renderTabel();
+        } catch (e) { document.getElementById('status-container').innerHTML = `<div class="status-box bg-red">ERROR DATABASE</div>`; }
     }
 
-    function renderTabel(sound = false) {
+    function renderTabel() {
         if (masterData.length === 0) return;
         const query = document.getElementById('search-input').value.toLowerCase();
         rowsPerPage = parseInt(document.getElementById('rows-per-page').value);
@@ -226,19 +217,18 @@
         const pageData = filtered.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
 
         const currentCount = counts[ipSaatIni] || 0;
-        const isDup = currentCount > 1;
-        document.getElementById('status-container').innerHTML = isDup 
+        document.getElementById('status-container').innerHTML = currentCount > 1 
             ? `<div class="status-box bg-red">⚠️ IP TERPAKAI (${currentCount}x)</div>` 
             : '<div class="status-box bg-green">✅ IP FRESH</div>';
-
-        if (sound) playAlert(isDup);
 
         document.getElementById('log-table').innerHTML = pageData.map(item => {
             const c = counts[item.ip] || 0;
             return `<tr class="${c > 1 ? 'row-duplicate' : ''}">
                 <td>${item.time}</td>
                 <td style="font-family:monospace; font-weight:bold; color:#fbbf24;">${item.ip} ${c > 1 ? `(${c}x)` : ''}</td>
-                <td>${item.isp}</td><td>${item.loc}</td>
+                <td>${item.isp}</td>
+                <td>${item.loc}</td>
+                <td><span class="ua-text" title="${item.ua || '-'}">${item.ua || '-'}</span></td>
             </tr>`;
         }).join('');
 
