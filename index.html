@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IP Monitor Pro - UA Tracker v2</title>
+    <title>IP & UA Monitor Pro</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; padding: 20px; margin: 0; }
         .container { max-width: 1100px; margin: auto; padding-bottom: 50px; }
@@ -25,10 +25,12 @@
 
         .ping-box { margin: 15px 0; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 13px; background: #0f172a; border: 1px solid #334155; }
         
-        .status-box { padding: 12px; border-radius: 8px; font-weight: bold; text-align: center; margin-bottom: 15px; }
-        .bg-red { background: #7f1d1d; color: #fecaca; border-left: 10px solid #ef4444; }
-        .bg-green { background: #064e3b; color: #a7f3d0; border-left: 10px solid #10b981; }
-        .bg-wait { background: #334155; color: #94a3b8; }
+        /* STATUS BOX */
+        .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .status-box { padding: 12px; border-radius: 8px; font-weight: bold; text-align: center; font-size: 13px; border-left: 8px solid transparent; }
+        .bg-red { background: #7f1d1d; color: #fecaca; border-color: #ef4444; }
+        .bg-green { background: #064e3b; color: #a7f3d0; border-color: #10b981; }
+        .bg-wait { background: #334155; color: #94a3b8; grid-column: span 2; }
         
         table { width: 100%; border-collapse: collapse; font-size: 0.8em; }
         th, td { padding: 10px; border-bottom: 1px solid #334155; text-align: left; vertical-align: top; }
@@ -60,7 +62,11 @@
                 <h2>Koneksi Saat Ini</h2>
                 <button onclick="location.reload()" class="copy-btn" style="background:#334155; color:white;">🔄 REFRESH</button>
             </div>
-            <div id="status-container"><div class="status-box bg-wait">⏳ MENGANALISA DATABASE...</div></div>
+            
+            <div id="status-container" class="status-grid">
+                <div class="status-box bg-wait">⏳ MENGANALISA DATABASE...</div>
+            </div>
+
             <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 10px;">
                 <span id="ip-display" class="ip-text">...</span>
                 <button class="copy-btn" onclick="copyText(document.getElementById('ip-display').innerText)">COPY IP</button>
@@ -122,7 +128,6 @@
 </div>
 
 <script>
-    // URL SCRIPT BARU KAMU
     const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxYRAZarHOHbp-S9hR_yj5lxXkRKk3ZiP5rO_Wm5uKlLur6rvljGkNd59AkQUfc6ZbA/exec';
     
     let masterData = [];
@@ -187,7 +192,7 @@
             document.getElementById('isp-display').innerText = "🏢 ISP: " + (det.org || '--');
             document.getElementById('label-ip-time').innerText = `WAKTU (${det.city})`;
 
-            // SIMPAN DATA KE SHEETS (IP + ISP + LOKASI + UA)
+            // SIMPAN DATA KE SHEETS
             await fetch(GOOGLE_SCRIPT_URL, { 
                 method: 'POST', mode: 'no-cors', 
                 body: JSON.stringify({ 
@@ -203,32 +208,52 @@
             const response = await fetch(GOOGLE_SCRIPT_URL);
             masterData = await response.json();
             renderTabel();
-        } catch (e) { document.getElementById('status-container').innerHTML = `<div class="status-box bg-red">ERROR DATABASE</div>`; }
+        } catch (e) { document.getElementById('status-container').innerHTML = `<div class="status-box bg-red" style="grid-column: span 2;">ERROR DATABASE</div>`; }
     }
 
     function renderTabel() {
         if (masterData.length === 0) return;
         const query = document.getElementById('search-input').value.toLowerCase();
         rowsPerPage = parseInt(document.getElementById('rows-per-page').value);
-        const counts = {};
-        masterData.forEach(item => { counts[item.ip] = (counts[item.ip] || 0) + 1; });
+        
+        const ipCounts = {};
+        const uaCounts = {};
+        
+        masterData.forEach(item => { 
+            ipCounts[item.ip] = (ipCounts[item.ip] || 0) + 1; 
+            uaCounts[item.ua] = (uaCounts[item.ua] || 0) + 1;
+        });
+
         const filtered = masterData.filter(item => String(item.ip).includes(query));
         const totalPages = Math.ceil(filtered.length / rowsPerPage) || 1;
         const pageData = filtered.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
 
-        const currentCount = counts[ipSaatIni] || 0;
-        document.getElementById('status-container').innerHTML = currentCount > 1 
-            ? `<div class="status-box bg-red">⚠️ IP TERPAKAI (${currentCount}x)</div>` 
-            : '<div class="status-box bg-green">✅ IP FRESH</div>';
+        // TAMPILKAN STATUS DOUBLE (IP & UA)
+        const currentIPCount = ipCounts[ipSaatIni] || 0;
+        const currentUACount = uaCounts[currentUA] || 0;
+
+        let ipStatusHTML = currentIPCount > 1 
+            ? `<div class="status-box bg-red">IP TERPAKAI (${currentIPCount}x)</div>` 
+            : `<div class="status-box bg-green">IP FRESH (1x)</div>`;
+            
+        let uaStatusHTML = currentUACount > 1 
+            ? `<div class="status-box bg-red">UA TERPAKAI (${currentUACount}x)</div>` 
+            : `<div class="status-box bg-green">UA FRESH (1x)</div>`;
+
+        document.getElementById('status-container').innerHTML = ipStatusHTML + uaStatusHTML;
 
         document.getElementById('log-table').innerHTML = pageData.map(item => {
-            const c = counts[item.ip] || 0;
-            return `<tr class="${c > 1 ? 'row-duplicate' : ''}">
+            const iC = ipCounts[item.ip] || 0;
+            const uC = uaCounts[item.ua] || 0;
+            return `<tr class="${iC > 1 ? 'row-duplicate' : ''}">
                 <td>${item.time}</td>
-                <td style="font-family:monospace; font-weight:bold; color:#fbbf24;">${item.ip} ${c > 1 ? `(${c}x)` : ''}</td>
+                <td style="font-family:monospace; font-weight:bold; color:#fbbf24;">${item.ip} ${iC > 1 ? `(${iC}x)` : ''}</td>
                 <td>${item.isp}</td>
                 <td>${item.loc}</td>
-                <td><span class="ua-text" title="${item.ua || '-'}">${item.ua || '-'}</span></td>
+                <td>
+                    <span class="ua-text" title="${item.ua || '-'}">${item.ua || '-'}</span>
+                    <small style="color:${uC > 1 ? '#ef4444' : '#10b981'}; font-weight:bold;">[Used: ${uC}x]</small>
+                </td>
             </tr>`;
         }).join('');
 
