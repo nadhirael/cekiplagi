@@ -3,16 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IP & UA Monitor Pro</title>
+    <title>IP & UA Monitor Pro v8</title>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; padding: 20px; margin: 0; }
         .container { max-width: 1100px; margin: auto; padding-bottom: 50px; }
         
+        /* NAVIGASI */
         .nav-menu { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #334155; padding-bottom: 10px; overflow-x: auto; align-items: center; }
         .nav-link { padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; background: #1e293b; color: #94a3b8; text-decoration: none; white-space: nowrap; font-size: 13px; }
         .nav-link.active { background: #38bdf8; color: #0f172a; }
+        
+        /* WARNA TOMBOL KHUSUS */
         .btn-blue { background: #4f46e5 !important; color: white !important; }
         .btn-purple { background: #7c3aed !important; color: white !important; }
+        .btn-orange { background: #f59e0b !important; color: #0f172a !important; }
+        .btn-pink { background: #db2777 !important; color: white !important; }
 
         .card { background: #1e293b; padding: 25px; border-radius: 12px; border: 1px solid #334155; margin-bottom: 20px; }
         .ip-text { font-size: 32px; color: #fbbf24; font-weight: bold; font-family: monospace; }
@@ -25,7 +30,6 @@
 
         .ping-box { margin: 15px 0; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 13px; background: #0f172a; border: 1px solid #334155; }
         
-        /* STATUS BOX */
         .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
         .status-box { padding: 12px; border-radius: 8px; font-weight: bold; text-align: center; font-size: 13px; border-left: 8px solid transparent; }
         .bg-red { background: #7f1d1d; color: #fecaca; border-color: #ef4444; }
@@ -47,13 +51,16 @@
 <body>
 
 <div class="container">
+    <!-- NAVIGASI UPDATE -->
     <div class="nav-menu">
         <div class="nav-link active" onclick="openPage('ip-monitor', this)">Monitor</div>
         <div class="nav-link" onclick="openPage('speed-test', this)">Speedtest</div>
         <div class="nav-link" onclick="openPage('zip-search', this)">Kode Pos</div>
         <span style="color: #334155; margin: 0 5px;">|</span>
         <a href="https://stake.com/ru" target="_blank" class="nav-link btn-blue">Stake RU ↗</a>
-        <a href="https://stake1022.com/ru" target="_blank" class="nav-link btn-purple">Stake 1022 ↗</a>
+        <a href="https://stake1022.com/ru" target="_blank" class="nav-link btn-purple">S 1022 RU ↗</a>
+        <a href="https://stake.com/tr" target="_blank" class="nav-link btn-orange">Stake TR ↗</a>
+        <a href="https://stake1022.com/tr" target="_blank" class="nav-link btn-pink">S 1022 TR ↗</a>
     </div>
 
     <div id="ip-monitor" class="page-content active">
@@ -106,7 +113,7 @@
                     <tbody id="log-table"><tr><td colspan="5" style="text-align:center; padding:20px;">Memuat data...</td></tr></tbody>
                 </table>
             </div>
-            <div style="display:flex; justify-content:center; align-items:center; gap:15px; margin-top:20px;">
+            <div class="pagination">
                 <button id="prev-btn" class="btn-page" onclick="changePage(-1)">Prev</button>
                 <span id="page-label" style="font-size:0.9em; color:#94a3b8;">Page 1</span>
                 <button id="next-btn" class="btn-page" onclick="changePage(1)">Next</button>
@@ -114,6 +121,7 @@
         </div>
     </div>
 
+    <!-- TAB SPEEDTEST & KODE POS -->
     <div id="speed-test" class="page-content">
         <div class="card" style="text-align: center;"><iframe src="https://fast.com" width="100%" height="450px" frameborder="0" style="background:white; border-radius:12px;"></iframe></div>
     </div>
@@ -192,19 +200,11 @@
             document.getElementById('isp-display').innerText = "🏢 ISP: " + (det.org || '--');
             document.getElementById('label-ip-time').innerText = `WAKTU (${det.city})`;
 
-            // SIMPAN DATA KE SHEETS
             await fetch(GOOGLE_SCRIPT_URL, { 
                 method: 'POST', mode: 'no-cors', 
-                body: JSON.stringify({ 
-                    time: new Date().toLocaleString('id-ID'), 
-                    ip: ipSaatIni, 
-                    isp: det.org, 
-                    loc: lokasi,
-                    ua: currentUA 
-                })
+                body: JSON.stringify({ time: new Date().toLocaleString('id-ID'), ip: ipSaatIni, isp: det.org, loc: lokasi, ua: currentUA })
             });
 
-            // TARIK HISTORI
             const response = await fetch(GOOGLE_SCRIPT_URL);
             masterData = await response.json();
             renderTabel();
@@ -218,7 +218,6 @@
         
         const ipCounts = {};
         const uaCounts = {};
-        
         masterData.forEach(item => { 
             ipCounts[item.ip] = (ipCounts[item.ip] || 0) + 1; 
             uaCounts[item.ua] = (uaCounts[item.ua] || 0) + 1;
@@ -228,19 +227,13 @@
         const totalPages = Math.ceil(filtered.length / rowsPerPage) || 1;
         const pageData = filtered.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
 
-        // TAMPILKAN STATUS DOUBLE (IP & UA)
         const currentIPCount = ipCounts[ipSaatIni] || 0;
         const currentUACount = uaCounts[currentUA] || 0;
 
-        let ipStatusHTML = currentIPCount > 1 
-            ? `<div class="status-box bg-red">IP TERPAKAI (${currentIPCount}x)</div>` 
-            : `<div class="status-box bg-green">IP FRESH (1x)</div>`;
-            
-        let uaStatusHTML = currentUACount > 1 
-            ? `<div class="status-box bg-red">UA TERPAKAI (${currentUACount}x)</div>` 
-            : `<div class="status-box bg-green">UA FRESH (1x)</div>`;
-
-        document.getElementById('status-container').innerHTML = ipStatusHTML + uaStatusHTML;
+        document.getElementById('status-container').innerHTML = `
+            <div class="status-box ${currentIPCount > 1 ? 'bg-red' : 'bg-green'}">IP: ${currentIPCount > 1 ? 'TERPAKAI' : 'FRESH'} (${currentIPCount}x)</div>
+            <div class="status-box ${currentUACount > 1 ? 'bg-red' : 'bg-green'}">UA: ${currentUACount > 1 ? 'TERPAKAI' : 'FRESH'} (${currentUACount}x)</div>
+        `;
 
         document.getElementById('log-table').innerHTML = pageData.map(item => {
             const iC = ipCounts[item.ip] || 0;
